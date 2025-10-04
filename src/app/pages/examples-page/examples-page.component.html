@@ -1,0 +1,56 @@
+<section class="p-4 md:p-8">
+  <header class="mb-6">
+    <h2 class="text-2xl font-semibold">Примери</h2>
+    <p class="text-gray-600">Изабери пример и покрени визуализацију.</p>
+  </header>
+
+  <!-- Examples list -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+    <button
+      *ngFor="let ex of examples"
+      type="button"
+      class="text-left rounded-xl border p-4 hover:bg-gray-50"
+      [class.border-gray-900]="ex.id === selectedId"
+      (click)="pick(ex.id)">
+      <div class="font-medium">{{ ex.title }}</div>
+      <div class="text-sm text-gray-600">{{ ex.description }}</div>
+    </button>
+  </div>
+
+  <!-- Controls -->
+  <div class="flex items-center gap-3 mb-3">
+    <label class="text-sm text-gray-600">Распоред:</label>
+    <select class="px-3 py-1.5 rounded-lg border border-gray-300"
+            [value]="layoutName"
+            (change)="onLayoutChange($event)">
+      <option value="dagre">Dagre</option>
+      <option value="elk">ELK</option>
+    </select>
+
+    <div class="ml-auto flex items-center gap-2">
+      <button class="px-3 py-1.5 rounded-lg border border-gray-300 hover:bg-gray-100" (click)="reset()">Ресетуј</button>
+      <button class="px-3 py-1.5 rounded-lg border border-gray-300 hover:bg-gray-100" [disabled]="step === 0" (click)="prev()">Назад</button>
+      <button *ngIf="step === 0" class="px-3 py-1.5 rounded-lg bg-gray-900 text-white hover:opacity-90" (click)="start()">Покрени визуализацију</button>
+      <button *ngIf="step > 0 && step < 5" class="px-3 py-1.5 rounded-lg bg-gray-900 text-white hover:opacity-90" (click)="next()">Даље</button>
+    </div>
+  </div>
+
+  <!-- Step info -->
+  <div class="mb-3 text-sm text-gray-700">
+    <ng-container [ngSwitch]="step">
+      <div *ngSwitchCase="0">Старт – прикажи граф. Кликни „Покрени визуализацију“.</div>
+      <div *ngSwitchCase="1">Тежине – на свакој грани видиш ознаку w=тежина.</div>
+      <div *ngSwitchCase="2">MST – истакнуте су гране које чине максимално разапињуће стабло.</div>
+      <div *ngSwitchCase="3">Инструментација – означене су гране које треба мерити.</div>
+      <div *ngSwitchCase="4">Мерења – унос или симулација мерења.</div>
+      <div *ngSwitchCase="5">Реконструкција – приказ броја прелазака по свим гранама.</div>
+    </ng-container>
+  </div>
+
+  <!-- Graph viewer -->
+  <app-graph-canvas
+    [data]="selectedData()"
+    [layoutName]="layoutName"
+    [overlay]="overlay()">
+  </app-graph-canvas>
+</section>
