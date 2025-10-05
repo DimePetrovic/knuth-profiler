@@ -1,7 +1,7 @@
 <section class="p-4 md:p-8">
   <header class="mb-6">
     <h2 class="text-2xl font-semibold">Примери</h2>
-    <p class="text-gray-600">Изабери пример и покрени визуализацију.</p>
+    <p class="text-gray-600">Изабери пример, покрени визуализацију и симулацију.</p>
   </header>
 
   <!-- Examples list -->
@@ -17,21 +17,23 @@
     </button>
   </div>
 
-  <!-- Controls -->
-  <div class="flex items-center gap-3 mb-3">
-    <label class="text-sm text-gray-600">Распоред:</label>
-    <select class="px-3 py-1.5 rounded-lg border border-gray-300"
-            [value]="layoutName"
-            (change)="onLayoutChange($event)">
-      <option value="dagre">Dagre</option>
-      <option value="elk">ELK</option>
-    </select>
+  <!-- Stepper & layout controls -->
+  <div class="flex flex-wrap items-center gap-3 mb-3">
+    <div class="flex items-center gap-2">
+      <button class="px-3 py-1.5 rounded-lg border border-gray-300 hover:bg-gray-100" (click)="resetSteps()">Ресетуј</button>
+      <button class="px-3 py-1.5 rounded-lg border border-gray-300 hover:bg-gray-100" [disabled]="step === 0" (click)="prevStep()">Назад</button>
+      <button *ngIf="step === 0" class="px-3 py-1.5 rounded-lg bg-gray-900 text-white hover:opacity-90" (click)="startStep()">Покрени визуализацију</button>
+      <button *ngIf="step > 0 && step < 5" class="px-3 py-1.5 rounded-lg bg-gray-900 text-white hover:opacity-90" (click)="nextStep()">Даље</button>
+    </div>
 
-    <div class="ml-auto flex items-center gap-2">
-      <button class="px-3 py-1.5 rounded-lg border border-gray-300 hover:bg-gray-100" (click)="reset()">Ресетуј</button>
-      <button class="px-3 py-1.5 rounded-lg border border-gray-300 hover:bg-gray-100" [disabled]="step === 0" (click)="prev()">Назад</button>
-      <button *ngIf="step === 0" class="px-3 py-1.5 rounded-lg bg-gray-900 text-white hover:opacity-90" (click)="start()">Покрени визуализацију</button>
-      <button *ngIf="step > 0 && step < 5" class="px-3 py-1.5 rounded-lg bg-gray-900 text-white hover:opacity-90" (click)="next()">Даље</button>
+    <div class="flex items-center gap-2 ml-auto">
+      <label class="text-sm text-gray-600">Распоред:</label>
+      <select class="px-3 py-1.5 rounded-lg border border-gray-300"
+              [value]="layoutName"
+              (change)="onLayoutChange($event)">
+        <option value="dagre">Dagre</option>
+        <option value="elk">ELK</option>
+      </select>
     </div>
   </div>
 
@@ -40,11 +42,37 @@
     <ng-container [ngSwitch]="step">
       <div *ngSwitchCase="0">Старт – прикажи граф. Кликни „Покрени визуализацију“.</div>
       <div *ngSwitchCase="1">Тежине – на свакој грани видиш ознаку w=тежина.</div>
-      <div *ngSwitchCase="2">MST – истакнуте су гране које чине максимално разапињуће стабло.</div>
-      <div *ngSwitchCase="3">Инструментација – означене су гране које треба мерити.</div>
-      <div *ngSwitchCase="4">Мерења – унос или симулација мерења.</div>
-      <div *ngSwitchCase="5">Реконструкција – приказ броја прелазака по свим гранама.</div>
+      <div *ngSwitchCase="2">MST – istaknute su grane koje čine maksimalno razapinjuće stablo (po težinama &gt; 0).</div>
+      <div *ngSwitchCase="3">Инструментација – označene su grane koje treba meriti (uvek ulazna sentinel grana, nikad izlazna).</div>
+      <div *ngSwitchCase="4">Мерења – izaberi broj pokretanja i pokreni simulaciju. Tokom simulacije vidiš brojače na instrumentizovanim granama.</div>
+      <div *ngSwitchCase="5">Реконструкција – (planirano) prikaz broja prolazaka po svim granama.</div>
     </ng-container>
+  </div>
+
+  <!-- Simulation controls (Korak 4+) -->
+  <div *ngIf="step >= 4" class="mb-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+    <div class="flex items-center gap-2">
+      <label class="text-sm text-gray-600 w-32">Број покретања</label>
+      <input type="number" min="1" class="px-3 py-1.5 rounded-lg border border-gray-300 w-full"
+             [value]="runs" (input)="onRunsChange($event)">
+    </div>
+    <div class="flex items-center gap-2">
+      <label class="text-sm text-gray-600 w-32">Брзина анимације</label>
+      <input type="range" min="0.25" max="3" step="0.25" class="w-full"
+             [value]="speed" (input)="onSpeedChange($event)">
+    </div>
+  </div>
+
+  <div *ngIf="step >= 4" class="flex items-center gap-2 mb-3">
+    <button class="px-3 py-1.5 rounded-lg bg-gray-900 text-white hover:opacity-90" [disabled]="isRunning && !isPaused" (click)="simStart()">Покрени</button>
+    <button class="px-3 py-1.5 rounded-lg border border-gray-300 hover:bg-gray-100" [disabled]="!isRunning || isPaused" (click)="simPause()">Пауза</button>
+    <button class="px-3 py-1.5 rounded-lg border border-gray-300 hover:bg-gray-100" [disabled]="!isRunning || !isPaused" (click)="simResume()">Настави</button>
+    <button class="px-3 py-1.5 rounded-lg border border-gray-300 hover:bg-gray-100" [disabled]="!isRunning" (click)="simStop()">Заустави</button>
+    <button class="px-3 py-1.5 rounded-lg border border-gray-300 hover:bg-gray-100" (click)="simReset()">Ресетуј бројач</button>
+
+    <div class="ml-auto text-sm text-gray-600">
+      Статус: <span *ngIf="isRunning && !isPaused">Ради</span><span *ngIf="isRunning && isPaused">Пауза</span><span *ngIf="!isRunning">Стојеће</span> — Покретање: {{ currentRun }}/{{ runs }}
+    </div>
   </div>
 
   <!-- Graph viewer -->

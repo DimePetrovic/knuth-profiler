@@ -35,14 +35,32 @@ export class GraphCanvasComponent implements OnInit, OnChanges, OnDestroy {
         { selector: 'node[kind = "decision"]', style: { 'shape': 'diamond', 'background-color': '#0ea5e9', 'label': 'data(label)', 'color': '#111827' } },
         { selector: 'node', style: { 'background-color': '#1f2937', 'label': 'data(label)', 'color': '#e5e7eb', 'font-size': 12, 'text-wrap': 'wrap', 'text-max-width': "160", 'text-valign': 'center', 'text-halign': 'center' } },
 
-        // Edges
+        // Edges (base)
         { selector: 'edge[kind = "entry"]', style: { 'line-color': '#22c55e', 'target-arrow-color': '#22c55e' } },
         { selector: 'edge[kind = "exit"]',  style: { 'line-color': '#ef4444', 'target-arrow-color': '#ef4444' } },
-        { selector: 'edge', style: { 'curve-style': 'bezier', 'width': 2, 'line-color': '#6b7280', 'target-arrow-shape': 'triangle', 'target-arrow-color': '#6b7280', 'label': 'data(_label)', 'font-size': 11, 'color': '#374151' } },
+        { selector: 'edge', style: { 
+          'curve-style': 'bezier',
+          'width': 2,
+          'line-color': '#6b7280',
+          'target-arrow-shape': 'triangle',
+          'target-arrow-color': '#6b7280',
+          'label': 'data(_label)',
+          'font-size': 14,           
+          'font-weight': 'bold',     
+          'color': '#1f2937',        
+          'text-background-color': '#ffffff',
+          'text-background-opacity': 0.9,
+          'text-background-shape': 'roundrectangle',
+          'text-background-padding': "2"
+        }},
 
-        // Overlays via classes
+        // MST & instrumentation layers
         { selector: 'edge.mst', style: { 'width': 5, 'line-color': '#111827', 'target-arrow-color': '#111827' } },
         { selector: 'edge.instrumented', style: { 'line-style': 'dashed' } },
+
+        // Simulation highlight
+        { selector: 'edge.current', style: { 'line-color': '#7c3aed', 'target-arrow-color': '#7c3aed', 'width': 6 } },
+        { selector: 'node.current', style: { 'border-width': 4, 'border-color': '#7c3aed' } },
 
         { selector: ':selected', style: { 'border-width': 3, 'border-color': '#f59e0b' } }
       ],
@@ -73,9 +91,7 @@ export class GraphCanvasComponent implements OnInit, OnChanges, OnDestroy {
     }
   }
 
-  ngOnDestroy(): void {
-    this.cy?.destroy();
-  }
+  ngOnDestroy(): void { this.cy?.destroy(); }
 
   fit(): void { this.cy?.fit(undefined, 20); }
   relayout(): void { this.runLayout(); }
@@ -94,7 +110,7 @@ export class GraphCanvasComponent implements OnInit, OnChanges, OnDestroy {
         kind: e.kind ?? 'normal',
         label: e.label ?? '',
         weight: e.weight ?? null,
-        _label: e.label ?? '' // runtime label used in style
+        _label: e.label ?? ''
       }
     }));
     this.cy!.elements().remove();
@@ -106,14 +122,16 @@ export class GraphCanvasComponent implements OnInit, OnChanges, OnDestroy {
     const ov = this.overlay ?? { showWeights: false, mstEdgeIds: [], instrumentedEdgeIds: [] };
 
     // Reset classes and labels
+    this.cy.nodes().removeClass('current');
     this.cy.edges().forEach(e => {
       e.removeClass('mst');
       e.removeClass('instrumented');
+      e.removeClass('current');
       const data = e.data();
       e.data('_label', data.label || '');
     });
 
-    // Weights visibility -> append "(w=...)" to labels
+    // Weights label
     if (ov.showWeights) {
       this.cy.edges().forEach(e => {
         const w = e.data('weight');
@@ -123,17 +141,36 @@ export class GraphCanvasComponent implements OnInit, OnChanges, OnDestroy {
       });
     }
 
-    // MST highlight
-    const mst = new Set(ov.mstEdgeIds);
-    this.cy.edges().forEach(e => {
-      if (mst.has(e.id())) e.addClass('mst');
-    });
+    // MST
+    const mst = new Set(ov.mstEdgeIds ?? []);
+    this.cy.edges().forEach(e => { if (mst.has(e.id())) e.addClass('mst'); });
 
-    // Instrumentation mark
-    const inst = new Set(ov.instrumentedEdgeIds);
-    this.cy.edges().forEach(e => {
-      if (inst.has(e.id())) e.addClass('instrumented');
-    });
+    // Instrumentation
+    const inst = new Set(ov.instrumentedEdgeIds ?? []);
+    this.cy.edges().forEach(e => { if (inst.has(e.id())) e.addClass('instrumented'); });
+
+    // Counters (instrumented only)
+    if (ov.counters) {
+      const counters = ov.counters;
+      this.cy.edges().forEach(e => {
+        const id = e.id();
+        if (counters[id] != null) {
+          const base = e.data('label') || '';
+          const label = base ? `${base}  ×${counters[id]}` : `×${counters[id]}`;
+          e.data('_label', label);
+        }
+      });
+    }
+
+    // Current highlight
+    if (ov.currentNodeId) {
+      const n = this.cy.getElementById(ov.currentNodeId);
+      if (n) n.addClass('current');
+    }
+    if (ov.currentEdgeId) {
+      const ed = this.cy.getElementById(ov.currentEdgeId);
+      if (ed) ed.addClass('current');
+    }
   }
 
   private runLayout(): void {

@@ -26,11 +26,29 @@ export interface GraphEdge {
 
 export type VizStep = 0 | 1 | 2 | 3 | 4 | 5; // 0:Start, 1:Weights, 2:MST, 3:Instr, 4:Measure, 5:Reconstruct
 
+// Add counters and simulation overlay bits
+export interface Counters {
+  [edgeId: string]: number;
+}
+
 // Overlay model consumed by GraphCanvas
 export interface GraphOverlay {
   showWeights: boolean;
   mstEdgeIds: string[];          // edges highlighted as MST
   instrumentedEdgeIds: string[]; // edges marked for instrumentation
+
+  // Simulation overlay
+  counters?: Counters;               // edgeId -> count (instrumented only)
+  currentNodeId?: string | null;     // highlight current node
+  currentEdgeId?: string | null;     // highlight current edge
+}
+
+// Simulation config
+export interface SimulationConfig {
+  runs: number;            // e.g. 20
+  maxStepsPerRun: number;  // e.g. 200
+  speed?: number;          // animation speed multiplier (0.25 - 3), default 1
+  fastMode?: boolean;      // if true, run without animation
 }
 
 // Graph container (nodes + edges).

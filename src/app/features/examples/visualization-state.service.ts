@@ -71,7 +71,7 @@ export class VisualizationStateService {
   readonly overlay = computed<GraphOverlay>(() => {
     const s = this.step();
     return {
-      showWeights: s >= 1,
+      showWeights: s === 1,
       mstEdgeIds: s >= 2 ? this.mstEdgeIds() : [],
       instrumentedEdgeIds: s >= 3 ? this.instrumentedEdgeIds() : []
     };
