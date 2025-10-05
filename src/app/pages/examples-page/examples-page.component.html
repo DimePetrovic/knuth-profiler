@@ -42,10 +42,10 @@
     <ng-container [ngSwitch]="step">
       <div *ngSwitchCase="0">Старт – прикажи граф. Кликни „Покрени визуализацију“.</div>
       <div *ngSwitchCase="1">Тежине – на свакој грани видиш ознаку w=тежина.</div>
-      <div *ngSwitchCase="2">MST – istaknute su grane koje čine maksimalno razapinjuće stablo (po težinama &gt; 0).</div>
-      <div *ngSwitchCase="3">Инструментација – označene su grane koje treba meriti (uvek ulazna sentinel grana, nikad izlazna).</div>
-      <div *ngSwitchCase="4">Мерења – izaberi broj pokretanja i pokreni simulaciju. Tokom simulacije vidiš brojače na instrumentizovanim granama.</div>
-      <div *ngSwitchCase="5">Реконструкција – (planirano) prikaz broja prolazaka po svim granama.</div>
+      <div *ngSwitchCase="2">MST – истакнуте су гране које чине максимално разапињуће стабло (по тежинама &gt; 0).</div>
+      <div *ngSwitchCase="3">Инструментација – означене су испрекиданом линијом гране које треба мерити.</div>
+      <div *ngSwitchCase="4">Мерења – изабери број покретања и покрени симулацију. Током симулације видиш бројаче на инструментизованим гранама.</div>
+      <div *ngSwitchCase="5">Реконструкција – приказ броја пролазака по свим гранама.</div>
     </ng-container>
   </div>
 
@@ -81,24 +81,24 @@
       <button class="px-3 py-1.5 rounded-lg bg-gray-900 text-white hover:opacity-90"
               (click)="reconComputeNext()"
               [disabled]="pendingTreeEdges.length === 0">
-        Izračunaj sledeću granu
+        Израчунај следећу грану
       </button>
 
       <button class="px-3 py-1.5 rounded-lg border border-gray-300 hover:bg-gray-100"
               (click)="reconPrev()" [disabled]="reconIdx <= 0">
-        Nazad
+        Претходно
       </button>
       <button class="px-3 py-1.5 rounded-lg border border-gray-300 hover:bg-gray-100"
               (click)="reconNext()" [disabled]="reconIdx + 1 >= reconSteps.length">
-        Dalje
+        Следеће
       </button>
       <button class="px-3 py-1.5 rounded-lg border border-gray-300 hover:bg-gray-100"
               (click)="reconReset()" [disabled]="reconSteps.length === 0">
-        Reset rekonstrukcije
+        Ресетуј
       </button>
 
       <div class="ml-auto text-sm text-gray-600">
-        Preostalo za rešavanje: {{ pendingTreeEdges.length }} grana
+        Преостало за решавање: {{ pendingTreeEdges.length }} грана
       </div>
     </div>
 
@@ -106,12 +106,12 @@
       <ng-container *ngIf="reconSteps.length > 0 && reconIdx >= 0; else noReconYet">
         {{ reconSteps[reconIdx].text }}
         <div class="mt-2 text-gray-600">
-          Rešena grana: <span class="font-medium">{{ reconSteps[reconIdx].solvedEdgeId }}</span>,
-          vrednost: <span class="font-medium">{{ reconSteps[reconIdx].value }}</span>
+          Решена грана: <span class="font-medium">{{ reconSteps[reconIdx].solvedEdgeId }}</span>,
+          вредност: <span class="font-medium">{{ reconSteps[reconIdx].value }}</span>
         </div>
       </ng-container>
       <ng-template #noReconYet>
-        Klikni „Izračunaj sledeću granu“ da bismo primenili баланс у првом доступном чвору и добили вредност tree гране.
+        Кликни „Израчунај следећу грану“ да бисмо применили баланс у првом доступном чвору и добили вредност tree гране.
       </ng-template>
     </div>
   </div>

@@ -145,38 +145,48 @@ export class GraphCanvasComponent implements OnInit, OnChanges, OnDestroy {
       e.data('_label', data.label || '');
     });
 
-    // Weights label
+    // --- Korak 1: Prikaz težina ---
     if (ov.showWeights) {
       this.cy.edges().forEach(e => {
         const w = e.data('weight');
-        const base = e.data('label') || '';
-        const suffix = typeof w === 'number' ? ` (w=${w})` : '';
-        e.data('_label', `${base}${suffix}`);
+        // Samo prikaz težine, bez "true"/"false"
+        e.data('_label', typeof w === 'number' ? `(w=${w})` : '');
       });
     }
 
-    // MST
+    // MST highlight
     const mst = new Set(ov.mstEdgeIds ?? []);
-    this.cy.edges().forEach(e => { if (mst.has(e.id())) e.addClass('mst'); });
+    this.cy.edges().forEach(e => {
+      if (mst.has(e.id())) e.addClass('mst');
+    });
 
-    // Instrumentation
+    // Instrumentation highlight
     const inst = new Set(ov.instrumentedEdgeIds ?? []);
-    this.cy.edges().forEach(e => { if (inst.has(e.id())) e.addClass('instrumented'); });
+    this.cy.edges().forEach(e => {
+      if (inst.has(e.id())) e.addClass('instrumented');
+    });
 
-    // Counters (instrumented only)
-    if (ov.counters) {
-      const counters = ov.counters;
-      this.cy.edges().forEach(e => {
-        const id = e.id();
-        if (counters[id] != null) {
-          const base = e.data('label') || '';
-          const label = base ? `${base}  ×${counters[id]}` : `×${counters[id]}`;
-          e.data('_label', label);
-        }
-      });
-    }
+    // --- Kombinacija labela (ID-jevi i brojači) ---
+    const showIds = !!ov.showEdgeIds;
+    const counters = ov.counters ?? {};
 
-    // Current highlight
+    this.cy.edges().forEach(e => {
+      const id = e.id();
+      const base = e.data('label') || '';
+      const currentLabel = e.data('_label') || '';
+      const parts: string[] = [];
+
+      // Redosled: [ID] base ×N, s tim da u showWeights koraku nema base
+      if (showIds) parts.push(`[${id}]`);
+      if (!ov.showWeights && base && base !== currentLabel) parts.push(base);
+      if (currentLabel && currentLabel !== base) parts.push(currentLabel);
+      if (counters[id] != null) parts.push(`×${counters[id]}`);
+
+      const finalLabel = parts.join(' ').trim();
+      e.data('_label', finalLabel || base);
+    });
+
+    // Current highlights
     if (ov.currentNodeId) {
       const n = this.cy.getElementById(ov.currentNodeId);
       if (n) n.addClass('current');

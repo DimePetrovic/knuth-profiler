@@ -73,7 +73,8 @@ export class VisualizationStateService {
     return {
       showWeights: s === 1,
       mstEdgeIds: s >= 2 ? this.mstEdgeIds() : [],
-      instrumentedEdgeIds: s >= 3 ? this.instrumentedEdgeIds() : []
+      instrumentedEdgeIds: s >= 3 ? this.instrumentedEdgeIds() : [],
+      showEdgeIds: s >= 5
     };
   });
 

@@ -41,6 +41,8 @@ export interface GraphOverlay {
   counters?: Counters;               // edgeId -> count (instrumented only)
   currentNodeId?: string | null;     // highlight current node
   currentEdgeId?: string | null;     // highlight current edge
+
+  showEdgeIds?: boolean;
 }
 
 // Simulation config
