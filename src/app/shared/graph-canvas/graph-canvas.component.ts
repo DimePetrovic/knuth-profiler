@@ -33,7 +33,21 @@ export class GraphCanvasComponent implements OnInit, OnChanges, OnDestroy {
         { selector: 'node[kind = "entry"]', style: { 'shape': 'round-rectangle', 'background-color': '#22c55e', 'label': 'data(label)', 'color': '#111827' } },
         { selector: 'node[kind = "exit"]',  style: { 'shape': 'round-rectangle', 'background-color': '#ef4444', 'label': 'data(label)', 'color': '#111827' } },
         { selector: 'node[kind = "decision"]', style: { 'shape': 'diamond', 'background-color': '#0ea5e9', 'label': 'data(label)', 'color': '#111827' } },
-        { selector: 'node', style: { 'background-color': '#1f2937', 'label': 'data(label)', 'color': '#e5e7eb', 'font-size': 12, 'text-wrap': 'wrap', 'text-max-width': "160", 'text-valign': 'center', 'text-halign': 'center' } },
+        { selector: 'node', style: {
+          'background-color': '#1f2937',
+          'label': 'data(label)',
+          'color': '#1f2937',      
+          'text-valign': 'center',
+          'text-halign': 'center',
+          'font-size': 13,
+          'font-weight': 'bold',
+          'text-outline-width': 1,
+          'text-outline-color': '#ffffff',
+          'text-background-color': '#ffffff',  
+          'text-background-opacity': 0.8,
+          'text-background-shape': 'roundrectangle',
+          'text-background-padding': "2"
+        }},
 
         // Edges (base)
         { selector: 'edge[kind = "entry"]', style: { 'line-color': '#22c55e', 'target-arrow-color': '#22c55e' } },

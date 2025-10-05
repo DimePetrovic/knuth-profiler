@@ -50,7 +50,7 @@
   </div>
 
   <!-- Simulation controls (Korak 4+) -->
-  <div *ngIf="step >= 4" class="mb-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+  <div *ngIf="step === 4" class="mb-4 grid grid-cols-1 md:grid-cols-3 gap-3">
     <div class="flex items-center gap-2">
       <label class="text-sm text-gray-600 w-32">Број покретања</label>
       <input type="number" min="1" class="px-3 py-1.5 rounded-lg border border-gray-300 w-full"
@@ -63,7 +63,7 @@
     </div>
   </div>
 
-  <div *ngIf="step >= 4" class="flex items-center gap-2 mb-3">
+  <div *ngIf="step === 4" class="flex items-center gap-2 mb-3">
     <button class="px-3 py-1.5 rounded-lg bg-gray-900 text-white hover:opacity-90" [disabled]="isRunning && !isPaused" (click)="simStart()">Покрени</button>
     <button class="px-3 py-1.5 rounded-lg border border-gray-300 hover:bg-gray-100" [disabled]="!isRunning || isPaused" (click)="simPause()">Пауза</button>
     <button class="px-3 py-1.5 rounded-lg border border-gray-300 hover:bg-gray-100" [disabled]="!isRunning || !isPaused" (click)="simResume()">Настави</button>
@@ -72,6 +72,47 @@
 
     <div class="ml-auto text-sm text-gray-600">
       Статус: <span *ngIf="isRunning && !isPaused">Ради</span><span *ngIf="isRunning && isPaused">Пауза</span><span *ngIf="!isRunning">Стојеће</span> — Покретање: {{ currentRun }}/{{ runs }}
+    </div>
+  </div>
+
+  <!-- Reconstruction controls (Korak 5) -->
+  <div *ngIf="step >= 5" class="mb-4 border rounded-xl p-4 bg-white">
+    <div class="flex flex-wrap items-center gap-2">
+      <button class="px-3 py-1.5 rounded-lg bg-gray-900 text-white hover:opacity-90"
+              (click)="reconComputeNext()"
+              [disabled]="pendingTreeEdges.length === 0">
+        Izračunaj sledeću granu
+      </button>
+
+      <button class="px-3 py-1.5 rounded-lg border border-gray-300 hover:bg-gray-100"
+              (click)="reconPrev()" [disabled]="reconIdx <= 0">
+        Nazad
+      </button>
+      <button class="px-3 py-1.5 rounded-lg border border-gray-300 hover:bg-gray-100"
+              (click)="reconNext()" [disabled]="reconIdx + 1 >= reconSteps.length">
+        Dalje
+      </button>
+      <button class="px-3 py-1.5 rounded-lg border border-gray-300 hover:bg-gray-100"
+              (click)="reconReset()" [disabled]="reconSteps.length === 0">
+        Reset rekonstrukcije
+      </button>
+
+      <div class="ml-auto text-sm text-gray-600">
+        Preostalo za rešavanje: {{ pendingTreeEdges.length }} grana
+      </div>
+    </div>
+
+    <div class="mt-3 text-sm text-gray-800 whitespace-pre-line">
+      <ng-container *ngIf="reconSteps.length > 0 && reconIdx >= 0; else noReconYet">
+        {{ reconSteps[reconIdx].text }}
+        <div class="mt-2 text-gray-600">
+          Rešena grana: <span class="font-medium">{{ reconSteps[reconIdx].solvedEdgeId }}</span>,
+          vrednost: <span class="font-medium">{{ reconSteps[reconIdx].value }}</span>
+        </div>
+      </ng-container>
+      <ng-template #noReconYet>
+        Klikni „Izračunaj sledeću granu“ da bismo primenili баланс у првом доступном чвору и добили вредност tree гране.
+      </ng-template>
     </div>
   </div>
 

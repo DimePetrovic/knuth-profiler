@@ -89,6 +89,24 @@ export interface ProfilingResult {
   computedAt: string;            // ISO date string
 }
 
+// Reconstruction term for explanation panel
+export interface ReconTerm {
+  edgeId: string;
+  sign: 1 | -1;          // + incoming contribution, - outgoing (relative to node balance)
+  value: number;         // known count used in formula
+  label?: string;        // optional human label
+}
+
+// One reconstruction step (solved tree edge)
+export interface ReconStep {
+  solvedEdgeId: string;  // tree edge that got its count
+  value: number;         // computed count
+  nodeId: string;        // node where balance was applied
+  parentId: string;      // its parent in the MST
+  equation: ReconTerm[]; // explanation terms used for x
+  text?: string;         // pre-rendered textual explanation (optional)
+}
+
 // Lightweight runtime guards (useful for API/file imports).
 export function isGraphNode(v: unknown): v is GraphNode {
   return !!v && typeof v === 'object' && 'id' in (v as any) && typeof (v as any).id === 'string';
@@ -107,3 +125,4 @@ export function isGraphData(v: unknown): v is GraphData {
   return !!obj && Array.isArray(obj.nodes) && Array.isArray(obj.edges)
     && obj.nodes.every(isGraphNode) && obj.edges.every(isGraphEdge);
 }
+
