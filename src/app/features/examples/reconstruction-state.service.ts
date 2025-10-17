@@ -229,12 +229,11 @@ function renderBalanceText(
     const name = t.label && t.label.length ? `${t.label} (${t.edgeId})` : t.edgeId;
     return `${sign} ${name} = ${t.value}`;
   });
-  const arrow = (edge.source === nodeId) ? `${nodeId} → ${edge.target}` : `${edge.source} → ${nodeId}`;
+  ;
   const xSide = (edge.target === nodeId) ? 'улаз' : 'излаз';
   const val = x >= 0 ? `${x}` : `−${Math.abs(x)}`;
 
   return `Баланс у чвору ${nodeId}: Σ(улази) = Σ(излази)
-Рачунамо непознату MST грану ${arrow} као део ${xSide}-а:
-${parts.join('  ')}
+Рачунамо непознату MST грану ${edge.id} као део ${xSide}-а:
 ⇒ вредност непознате гране је ${val}.`;
 }

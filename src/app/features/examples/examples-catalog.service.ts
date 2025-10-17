@@ -70,7 +70,7 @@ export class ExamplesCatalogService {
         this.e('e3', 'C', 'EXIT', '', 70, 'exit')
       ]
     };
-    return { id: 'linear-flow', title: 'Linearni tok', description: 'Najjednostavniji primer bez grananja.', data };
+    return { id: 'linear-flow', title: 'Линеарни ток', description: 'Најједноставнији пример без гранања.', data };
   }
 
   // 2) If / Else
@@ -78,11 +78,11 @@ export class ExamplesCatalogService {
     const data: GraphData = {
       nodes: [
         this.n('ENTRY', 'ENTRY', 'entry'),
-        this.n('S', 'Start'),
-        this.n('D', 'Uslov', 'decision'),
-        this.n('T', 'Grana T'),
-        this.n('F', 'Grana F'),
-        this.n('M', 'Merge'),
+        this.n('S', 'S'),
+        this.n('D', 'D', 'decision'),
+        this.n('T', 'T'),
+        this.n('F', 'F'),
+        this.n('M', 'M'),
         this.n('EXIT', 'EXIT', 'exit')
       ],
       edges: [
@@ -95,7 +95,7 @@ export class ExamplesCatalogService {
         this.e('e6', 'M', 'EXIT', '', 77, 'exit')
       ]
     };
-    return { id: 'if-else', title: 'If / Else', description: 'Grananje sa spajanjem putanja.', data };
+    return { id: 'if-else', title: 'If / Else', description: 'Гранање са спајањем путања.', data };
   }
 
   // 3) While loop
@@ -103,9 +103,9 @@ export class ExamplesCatalogService {
     const data: GraphData = {
       nodes: [
         this.n('ENTRY', 'ENTRY', 'entry'),
-        this.n('I', 'Init'),
-        this.n('D', 'Uslov', 'decision'),
-        this.n('B', 'Telo petlje'),
+        this.n('I', 'I'),
+        this.n('D', 'D', 'decision'),
+        this.n('B', 'B'),
         this.n('EXIT', 'EXIT', 'exit')
       ],
       edges: [
@@ -116,7 +116,7 @@ export class ExamplesCatalogService {
         this.e('e4', 'D', 'EXIT', 'false', 44, 'exit')
       ]
     };
-    return { id: 'while-loop', title: 'Jednostavna petlja', description: 'While-petlja sa povratnom ivicom.', data };
+    return { id: 'while-loop', title: 'Једноставна петља', description: 'While-петља са повратном ивицом.', data };
   }
 
   // 4) Nested loop
@@ -124,10 +124,10 @@ export class ExamplesCatalogService {
     const data: GraphData = {
       nodes: [
         this.n('ENTRY', 'ENTRY', 'entry'),
-        this.n('P', 'Pre'),
-        this.n('D1', 'Uslov 1', 'decision'),
-        this.n('D2', 'Uslov 2', 'decision'),
-        this.n('B', 'Unutrašnje telo'),
+        this.n('P', 'P'),
+        this.n('D1', 'D1', 'decision'),
+        this.n('D2', 'D2', 'decision'),
+        this.n('B', 'B'),
         this.n('EXIT', 'EXIT', 'exit')
       ],
       edges: [
@@ -140,7 +140,7 @@ export class ExamplesCatalogService {
         this.e('e6', 'D1', 'EXIT', 'false', 70, 'exit')
       ]
     };
-    return { id: 'nested-loop', title: 'Ugnježdena petlja', description: 'Dve petlje: unutrašnja u spoljnoj.', data };
+    return { id: 'nested-loop', title: 'Угњеждена петља', description: 'Две петље: унутрашња у спољашњој.', data };
   }
 
   // 5) Switch / 3 outcomes
@@ -148,11 +148,11 @@ export class ExamplesCatalogService {
     const data: GraphData = {
       nodes: [
         this.n('ENTRY', 'ENTRY', 'entry'),
-        this.n('D', 'Izbor', 'decision'),
-        this.n('B0', 'Grana = 0'),
-        this.n('B1', 'Grana = 1'),
-        this.n('B2', 'Else'),
-        this.n('M', 'Merge'),
+        this.n('D', 'D', 'decision'),
+        this.n('B0', 'B0 = 0'),
+        this.n('B1', 'B1 = 1'),
+        this.n('B2', 'B2'),
+        this.n('M', 'M'),
         this.n('EXIT', 'EXIT', 'exit')
       ],
       edges: [
@@ -166,7 +166,7 @@ export class ExamplesCatalogService {
         this.e('e7', 'M', 'EXIT', '', 77, 'exit')
       ]
     };
-    return { id: 'switch-three', title: 'Više ishoda', description: 'Grananje sa tri izlaza i spajanjem.', data };
+    return { id: 'switch-three', title: 'Више исхода', description: 'Гранање са три излаза и спајањем.', data };
   }
 
   // 6) Loop with inner if
@@ -174,11 +174,11 @@ export class ExamplesCatalogService {
     const data: GraphData = {
       nodes: [
         this.n('ENTRY', 'ENTRY', 'entry'),
-        this.n('Dloop', 'Uslov petlje', 'decision'),
-        this.n('Body', 'Telo'),
-        this.n('Dif', 'Uslov u telu', 'decision'),
-        this.n('T', 'Putanja T'),
-        this.n('F', 'Putanja F'),
+        this.n('Dloop', 'Dloop', 'decision'),
+        this.n('Body', 'Body'),
+        this.n('Dif', 'Dif', 'decision'),
+        this.n('T', 'T'),
+        this.n('F', 'F'),
         this.n('EXIT', 'EXIT', 'exit')
       ],
       edges: [
@@ -192,6 +192,6 @@ export class ExamplesCatalogService {
         this.e('e7', 'Dloop', 'EXIT', 'false', 72, 'exit')
       ]
     };
-    return { id: 'loop-if', title: 'Petlja + if', description: 'If-else unutar petlje.', data };
+    return { id: 'loop-if', title: 'Петља + if', description: 'If-else унутар петље.', data };
   }
 }
