@@ -1,0 +1,141 @@
+<section class="py-8">
+  <h1 class="text-2xl font-semibold mb-4">CFG Backend Test</h1>
+
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div class="space-y-4">
+      <div class="border rounded-xl p-4 bg-white space-y-3">
+        <div>
+          <label class="block text-sm text-gray-600 mb-1">Jezik</label>
+          <select class="w-full border rounded-lg px-3 py-2" [ngModel]="language()" (ngModelChange)="language.set($event)">
+            <option value="c">C</option>
+            <option value="cpp">C++</option>
+            <option value="java">Java</option>
+            <option value="python">Python</option>
+            <option value="javascript">JavaScript</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-sm text-gray-600 mb-1">Filename</label>
+          <input class="w-full border rounded-lg px-3 py-2" [ngModel]="filename()" (ngModelChange)="filename.set($event)" />
+        </div>
+
+        <div>
+          <label class="block text-sm text-gray-600 mb-1">Source (UTF-8)</label>
+          <textarea class="w-full border rounded-lg px-3 py-2 font-mono text-sm" rows="14" [ngModel]="source()" (ngModelChange)="source.set($event)"></textarea>
+        </div>
+
+        <div class="flex flex-wrap gap-2">
+          <button class="px-3 py-2 rounded-lg bg-gray-900 text-white hover:opacity-90 disabled:opacity-40" [disabled]="isSubmitting()" (click)="submitSource()">
+            Posalji source
+          </button>
+
+          <label class="px-3 py-2 rounded-lg border border-gray-300 hover:bg-gray-100 cursor-pointer">
+            Upload fajla
+            <input type="file" class="hidden" (change)="uploadFile($event)" [disabled]="isSubmitting()" />
+          </label>
+        </div>
+      </div>
+
+      <div class="border rounded-xl p-4 bg-white text-sm space-y-1">
+        <div><span class="text-gray-600">Job ID:</span> {{ state().jobId || '—' }}</div>
+        <div><span class="text-gray-600">Status:</span> {{ state().status?.status || '—' }}</div>
+        <div><span class="text-gray-600">Stage:</span> {{ state().status?.stage || '—' }}</div>
+        <div><span class="text-gray-600">Poruka:</span> {{ message() || '—' }}</div>
+      </div>
+
+      <div *ngIf="state().error as err" class="border rounded-xl p-4 bg-red-50 text-sm">
+        <div class="font-medium text-red-700">Greška: {{ err.code }}</div>
+        <div class="text-red-700">{{ err.message }}</div>
+        <div class="text-red-700">Stage: {{ err.stage }}</div>
+      </div>
+    </div>
+
+    <div class="border rounded-xl p-4 bg-white min-h-[520px]">
+      <div *ngIf="workflow.hasGraph()" class="space-y-3 mb-4">
+        <div class="flex flex-wrap items-center gap-2">
+          <button class="px-3 py-1.5 rounded-lg border border-gray-300 hover:bg-gray-100" (click)="workflow.resetSteps()">Ресетуј</button>
+          <button class="px-3 py-1.5 rounded-lg border border-gray-300 hover:bg-gray-100" [disabled]="workflow.step() === 0" (click)="workflow.prevStep()">Назад</button>
+          <button *ngIf="workflow.canStartVisualization()" class="px-3 py-1.5 rounded-lg bg-gray-900 text-white hover:opacity-90" (click)="workflow.startStep()">Покрени визуализацију</button>
+          <button *ngIf="workflow.canAdvance()" class="px-3 py-1.5 rounded-lg bg-gray-900 text-white hover:opacity-90" (click)="workflow.nextStep()">Даље</button>
+
+          <div class="flex items-center gap-2 ml-auto">
+            <label class="text-sm text-gray-600">Распоред:</label>
+            <select #layoutSelect class="px-3 py-1.5 rounded-lg border border-gray-300"
+                    [value]="workflow.layoutName()"
+                    (change)="workflow.setLayout(layoutSelect.value)">
+              <option value="dagre">Dagre</option>
+              <option value="elk">ELK</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="text-sm text-gray-700">{{ workflow.stepDescription() }}</div>
+
+        <div *ngIf="workflow.isSimulationStep()" class="grid grid-cols-1 md:grid-cols-2 gap-2">
+          <div class="flex items-center gap-2">
+            <label class="text-sm text-gray-600 w-32">Број покретања</label>
+            <input #runsInput type="number" min="1" class="px-3 py-1.5 rounded-lg border border-gray-300 w-full"
+                   [value]="workflow.runs()" (input)="workflow.setRuns(runsInput.valueAsNumber)">
+          </div>
+          <div class="flex items-center gap-2">
+            <label class="text-sm text-gray-600 w-32">Брзина</label>
+            <input #speedInput type="range" min="0.25" max="3" step="0.25" class="w-full"
+                   [value]="workflow.speed()" (input)="workflow.setSpeed(speedInput.valueAsNumber)">
+          </div>
+        </div>
+
+        <div *ngIf="workflow.isSimulationStep()" class="flex flex-wrap items-center gap-2">
+          <button class="px-3 py-1.5 rounded-lg bg-gray-900 text-white hover:opacity-90" [disabled]="workflow.isRunning() && !workflow.isPaused()" (click)="workflow.simStart()">Покрени</button>
+          <button class="px-3 py-1.5 rounded-lg border border-gray-300 hover:bg-gray-100" [disabled]="!workflow.isRunning() || workflow.isPaused()" (click)="workflow.simPause()">Пауза</button>
+          <button class="px-3 py-1.5 rounded-lg border border-gray-300 hover:bg-gray-100" [disabled]="!workflow.isRunning() || !workflow.isPaused()" (click)="workflow.simResume()">Настави</button>
+          <button class="px-3 py-1.5 rounded-lg border border-gray-300 hover:bg-gray-100" [disabled]="!workflow.isRunning()" (click)="workflow.simStop()">Заустави</button>
+          <button class="px-3 py-1.5 rounded-lg border border-gray-300 hover:bg-gray-100" (click)="workflow.simReset()">Ресетуј бројач</button>
+
+          <div class="ml-auto text-sm text-gray-600">
+            Статус: {{ workflow.simulationStatusLabel() }} — {{ workflow.currentRun() }}/{{ workflow.runs() }}
+          </div>
+        </div>
+
+        <div *ngIf="workflow.isReconstructionStep()" class="border rounded-xl p-3 bg-white">
+          <div class="flex flex-wrap items-center gap-2">
+            <button class="px-3 py-1.5 rounded-lg bg-gray-900 text-white hover:opacity-90"
+                  (click)="onReconComputeNext()"
+                    [disabled]="workflow.pendingTreeEdges().length === 0">
+              Израчунај следећу грану
+            </button>
+            <button class="px-3 py-1.5 rounded-lg border border-gray-300 hover:bg-gray-100"
+                    (click)="workflow.reconPrev()" [disabled]="workflow.reconIdx() <= 0">Претходно</button>
+            <button class="px-3 py-1.5 rounded-lg border border-gray-300 hover:bg-gray-100"
+                    (click)="workflow.reconNext()" [disabled]="workflow.reconIdx() + 1 >= workflow.reconSteps().length">Следеће</button>
+            <button class="px-3 py-1.5 rounded-lg border border-gray-300 hover:bg-gray-100"
+                    (click)="workflow.reconReset()" [disabled]="workflow.reconSteps().length === 0">Ресетуј</button>
+          </div>
+
+          <div *ngIf="workflow.reconLastMessage()" class="mt-3 text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+            {{ workflow.reconLastMessage() }}
+          </div>
+
+          <div class="mt-3 text-sm text-gray-800 whitespace-pre-line">
+            <ng-container *ngIf="workflow.reconSteps().length > 0 && workflow.reconIdx() >= 0; else noReconYet">
+              {{ workflow.reconSteps()[workflow.reconIdx()].text }}
+              <div class="mt-2 text-gray-600">
+                Решена грана: <span class="font-medium">{{ workflow.reconSteps()[workflow.reconIdx()].solvedEdgeId }}</span>,
+                вредност: <span class="font-medium">{{ workflow.reconSteps()[workflow.reconIdx()].value }}</span>
+              </div>
+            </ng-container>
+            <ng-template #noReconYet>
+              Кликни „Израчунај следећу грану“ да бисмо применили баланс у првом доступном чвору и добили вредност tree гране.
+            </ng-template>
+          </div>
+        </div>
+      </div>
+
+      <app-graph-canvas
+        [data]="workflow.selectedData()"
+        [layoutName]="workflow.layoutName()"
+        [overlay]="workflow.overlay()">
+      </app-graph-canvas>
+    </div>
+  </div>
+</section>

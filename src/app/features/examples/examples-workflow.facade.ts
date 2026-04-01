@@ -1,5 +1,5 @@
 import { computed, inject, Injectable } from '@angular/core';
-import { GraphData, GraphLayoutName, VizStep } from '../../core/graph/graph.types';
+import { GraphData, GraphLayoutName, ReconStep, VizStep } from '../../core/graph/graph.types';
 import { ReconstructionStateService } from './reconstruction-state.service';
 import { SimulationStateService } from './simulation-state.service';
 import { ExamplesGraphStateService } from './visualization-state.service';
@@ -24,6 +24,7 @@ export class ExamplesWorkflowFacade {
   readonly step = this.visualization.step;
   readonly layoutName = this.visualization.layout;
   readonly selectedData = computed<GraphData | null>(() => this.visualization.graphData());
+  readonly hasGraph = computed(() => this.selectedData() !== null);
 
   readonly overlay = computed(() => {
     const baseOverlay = this.visualization.overlay();
@@ -57,6 +58,7 @@ export class ExamplesWorkflowFacade {
   readonly reconSteps = this.reconstruction.steps;
   readonly reconIdx = this.reconstruction.idx;
   readonly pendingTreeEdges = this.reconstruction.pendingTreeEdgeIds;
+  readonly reconLastMessage = this.reconstruction.lastComputeMessage;
   readonly stepDescription = computed(() => STEP_DESCRIPTIONS[this.step()]);
 
   readonly canStartVisualization = computed(() => this.step() === 0);
@@ -73,6 +75,16 @@ export class ExamplesWorkflowFacade {
     if (layoutName === 'dagre' || layoutName === 'elk') {
       this.visualization.layout.set(layoutName as GraphLayoutName);
     }
+  }
+
+  loadImportedGraph(graphData: GraphData): void {
+    this.visualization.setImportedGraph(graphData);
+    this.resetDerivedState();
+  }
+
+  clearImportedGraph(): void {
+    this.visualization.clearImportedGraph();
+    this.resetDerivedState();
   }
 
   startStep(): void {
@@ -97,8 +109,15 @@ export class ExamplesWorkflowFacade {
     this.resetDerivedState();
   }
 
-  reconComputeNext(): void {
-    this.reconstruction.computeNext();
+  reconComputeNext(): ReconStep | null {
+    if (Object.keys(this.simulation.counters()).length === 0) {
+      const prevFastMode = this.simulation.config().fastMode ?? false;
+      this.simulation.setFastMode(true);
+      this.simulation.start();
+      this.simulation.setFastMode(prevFastMode);
+    }
+
+    return this.reconstruction.computeNext();
   }
 
   reconPrev(): void {

@@ -83,11 +83,12 @@ export function solveBalanceAtNode(
   };
 }
 
-export function renderBalanceText(nodeId: string, edge: GraphEdge, x: number): string {
+export function renderBalanceText(data: GraphData, nodeId: string, edge: GraphEdge, x: number): string {
+  const nodeLabel = data.nodes.find(node => node.id === nodeId)?.label || nodeId;
   const side = edge.target === nodeId ? 'улаз' : 'излаз';
   const value = x >= 0 ? `${x}` : `−${Math.abs(x)}`;
 
-  return `Баланс у чвору ${nodeId}: Σ(улази) = Σ(излази)
+  return `Баланс у чвору ${nodeLabel}: Σ(улази) = Σ(излази)
 Рачунамо непознату MST грану ${edge.id} као део ${side}-а:
 ⇒ вредност непознате гране је ${value}.`;
 }

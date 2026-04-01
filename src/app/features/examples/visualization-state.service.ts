@@ -10,10 +10,11 @@ export class ExamplesGraphStateService {
   readonly selectedId: WritableSignal<string> = signal<string>("");
   readonly step = signal<VizStep>(0);
   readonly layout = signal<GraphLayoutName>('dagre');
+  readonly importedGraphData = signal<GraphData | null>(null);
 
   // Derived
   readonly selectedExample = computed<ExampleItem | undefined>(() => this.examples.find(e => e.id === this.selectedId()));
-  readonly graphData = computed<GraphData | null>(() => this.selectedExample()?.data ?? null);
+  readonly graphData = computed<GraphData | null>(() => this.importedGraphData() ?? this.selectedExample()?.data ?? null);
 
   // MST and instrumentation
   readonly mstEdgeIds = computed<string[]>(() => {
@@ -53,7 +54,18 @@ export class ExamplesGraphStateService {
   reset(): void { this.step.set(0); }
 
   pickExample(id: string): void {
+    this.importedGraphData.set(null);
     this.selectedId.set(id);
+    this.reset();
+  }
+
+  setImportedGraph(graphData: GraphData): void {
+    this.importedGraphData.set(graphData);
+    this.reset();
+  }
+
+  clearImportedGraph(): void {
+    this.importedGraphData.set(null);
     this.reset();
   }
 }

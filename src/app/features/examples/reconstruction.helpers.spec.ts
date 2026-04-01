@@ -57,7 +57,7 @@ describe('reconstruction helpers', () => {
   });
 
   it('renders the explanation text with node, edge and resolved value', () => {
-    expect(renderBalanceText('ENTRY', graph.edges[1], 4)).toContain('вредност непознате гране је 4');
-    expect(renderBalanceText('ENTRY', graph.edges[1], 4)).toContain('e0');
+    expect(renderBalanceText(graph, 'ENTRY', graph.edges[1], 4)).toContain('вредност непознате гране је 4');
+    expect(renderBalanceText(graph, 'ENTRY', graph.edges[1], 4)).toContain('e0');
   });
 });

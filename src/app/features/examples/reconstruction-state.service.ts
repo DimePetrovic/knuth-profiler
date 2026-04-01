@@ -18,6 +18,7 @@ export class ReconstructionStateService {
   readonly steps = signal<ReconStep[]>([]);
   // Pointer in the steps list
   readonly idx = signal<number>(-1);
+  readonly lastComputeMessage = signal<string | null>(null);
 
   // Data providers
   private get gd(): GraphData | null { return this.viz.graphData(); }
@@ -59,6 +60,7 @@ export class ReconstructionStateService {
     this.reconCounters.set({});
     this.steps.set([]);
     this.idx.set(-1);
+    this.lastComputeMessage.set(null);
   }
 
   /**
@@ -67,11 +69,25 @@ export class ReconstructionStateService {
    * AND all other incident edges (MST or not) are known, or are sentinels (sentinels don't block).
    */
   computeNext(): ReconStep | null {
-    const gd = this.gd; if (!gd) return null;
+    const gd = this.gd;
+    if (!gd) {
+      this.lastComputeMessage.set('Graf nije učitan.');
+      return null;
+    }
 
-    const candidate = findSolvableNodeAndEdge(gd, this.pendingTreeEdgeIds(), this.allKnownCounts());
+    const pending = this.pendingTreeEdgeIds();
+    if (pending.length === 0) {
+      this.lastComputeMessage.set('Nema preostalih MST grana za rekonstrukciju.');
+      return null;
+    }
+
+    const known = this.allKnownCounts();
+
+    const candidate = findSolvableNodeAndEdge(gd, pending, known);
     if (!candidate) {
-      // Nothing solvable right now (insufficient information) or all done
+      this.lastComputeMessage.set(
+        `Nijedan čvor trenutno nije rešiv. Pending MST grane: ${pending.length}, poznatih brojača: ${known.size}. Pokreni simulaciju ili idi na sledeći korak.`
+      );
       return null;
     }
 
@@ -91,12 +107,13 @@ export class ReconstructionStateService {
       nodeId,
       parentId: (edge.source === nodeId ? edge.target : edge.source),
       equation: terms,
-      text: renderBalanceText(nodeId, edge, x)
+      text: renderBalanceText(gd, nodeId, edge, x)
     };
 
     const arr = [...this.steps(), step];
     this.steps.set(arr);
     this.idx.set(arr.length - 1);
+    this.lastComputeMessage.set(null);
 
     return step;
   }

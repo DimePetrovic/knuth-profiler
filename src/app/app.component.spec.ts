@@ -25,5 +25,6 @@ describe('AppComponent', () => {
     expect(navText).toContain('Почетна');
     expect(navText).toContain('Теорија');
     expect(navText).toContain('Примери');
+    expect(navText).toContain('CFG Import');
   });
 });
