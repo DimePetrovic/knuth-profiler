@@ -1,6 +1,12 @@
 import { Injectable, computed, signal } from '@angular/core';
-import { Counters, GraphData, GraphEdge, SimulationConfig } from '../../core/graph/graph.types';
-import { VisualizationStateService } from './visualization-state.service';
+import { Counters, GraphData, SimulationConfig } from '../../core/graph/graph.types';
+import { ExamplesGraphStateService } from './visualization-state.service';
+import {
+  runFastSimulation,
+  initializeAnimatedTraversal,
+  tickAnimatedTraversal,
+  AnimatedTraversalState
+} from './simulation.engine';
 
 @Injectable({ providedIn: 'root' })
 export class SimulationStateService {
@@ -28,7 +34,7 @@ export class SimulationStateService {
     currentEdgeId: this.currentEdgeId()
   }));
 
-  constructor(private viz: VisualizationStateService) {}
+  constructor(private viz: ExamplesGraphStateService) {}
 
   setRuns(n: number) {
     this.config.update(c => ({ ...c, runs: Math.max(1, Math.floor(n)) }));
@@ -84,48 +90,68 @@ export class SimulationStateService {
     this.currentEdgeId.set(null);
   }
 
-  // --- Core simulation ------------------------------------------------------
+  // --- Core simulation (using pure engine) --------------------------------
 
   private runFast() {
-    const gd = this.gd!;
-    const inst = this.instrumented;
+    const gd = this.gd;
+    if (!gd) return;
+
     const cfg = this.config();
+    const counters = runFastSimulation(gd, this.instrumented, cfg, this.rng);
 
-    for (let r = 0; r < cfg.runs; r++) {
-      // Traverse entry sentinel first (always instrumented in our rules)
-      const entryEdge = gd.edges.find(e => e.id === '__entry_sentinel__');
-      if (entryEdge && inst.has(entryEdge.id)) {
-        this.inc(entryEdge.id);
-      }
-      // Start at ENTRY
-      let node = 'ENTRY';
-      let steps = 0;
-      while (steps++ < cfg.maxStepsPerRun) {
-        // If at EXIT, traverse exit sentinel and break
-        if (node === 'EXIT') {
-          break; // exit sentinel not counted by rules
-        }
-        const out = this.getOutgoing(gd, node);
-        if (out.length === 0) break; // dead end
-        const edge = this.pickEdge(out);
-        if (inst.has(edge.id)) this.inc(edge.id);
-        node = edge.target;
-      }
-    }
-
-    this.currentRun.set(this.config().runs);
+    this.counters.set(counters);
+    this.currentRun.set(cfg.runs);
     this.isRunning.set(false);
   }
 
   private runAnimated() {
-    // Initialize for first run
-    this.currentRun.set(0);
-    this.currentNodeId.set('ENTRY');
-    // Count entry sentinel immediately if present & instrumented
-    const gd = this.gd!;
-    const entryEdge = gd.edges.find(e => e.id === '__entry_sentinel__');
-    if (entryEdge && this.instrumented.has(entryEdge.id)) this.inc(entryEdge.id);
+    const gd = this.gd;
+    if (!gd) return;
+
+    const state = initializeAnimatedTraversal(gd, this.instrumented);
+    this.applyTraversalState(state);
     this.tickLoop();
+  }
+
+  private tick() {
+    if (!this.isRunning() || this.isPaused()) return;
+
+    const gd = this.gd;
+    if (!gd) return;
+
+    // Reconstruct engine state from signals
+    const currentState: AnimatedTraversalState = {
+      currentRun: this.currentRun(),
+      currentNodeId: this.currentNodeId() || '',
+      currentEdgeId: this.currentEdgeId(),
+      counters: this.counters(),
+      isFinished: false
+    };
+
+    const cfg = this.config();
+    const nextState = tickAnimatedTraversal(gd, this.instrumented, cfg, currentState);
+
+    this.applyTraversalState(nextState);
+
+    if (nextState.isFinished) {
+      this.stop();
+    }
+  }
+
+  private applyTraversalState(state: AnimatedTraversalState) {
+    this.currentRun.set(state.currentRun);
+    this.currentNodeId.set(state.currentNodeId);
+    this.currentEdgeId.set(state.currentEdgeId);
+    this.counters.set(state.counters);
+  }
+
+  // --- Helpers ----------------------------------------------------------
+
+  private stopTimer() {
+    if (this.timer) {
+      clearInterval(this.timer);
+      this.timer = null;
+    }
   }
 
   private tickLoop() {
@@ -134,107 +160,5 @@ export class SimulationStateService {
     const interval = Math.round(baseInterval / (cfg.speed || 1));
     this.stopTimer();
     this.timer = setInterval(() => this.tick(), interval);
-  }
-
-  private tick() {
-    const gd = this.gd!;
-    if (!this.isRunning() || this.isPaused()) return;
-
-    let run = this.currentRun();
-    if (run >= this.config().runs) {
-      this.stop();
-      return;
-    }
-
-    let node = this.currentNodeId();
-    if (!node) node = 'ENTRY';
-    // If we are at EXIT, finish this run and start next
-    // if (node === 'EXIT') {
-    //   run += 1;
-    //   this.currentRun.set(run);
-    //   if (run >= this.config().runs) {
-    //     this.stop();
-    //     return;
-    //   }
-    //   // Start next run
-    //   this.currentNodeId.set('ENTRY');
-    //   this.currentEdgeId.set('__entry_sentinel__');
-    //   const entryEdge = gd.edges.find(e => e.id === '__entry_sentinel__');
-    //   if (entryEdge && this.instrumented.has(entryEdge.id)) this.inc(entryEdge.id);
-    //   return;
-    // }
-
-    // Special handling: EXIT node -> traverse exit sentinel before finishing
-    if (node === 'EXIT') {
-      const exitEdge = gd.edges.find(e => e.kind === 'exit');
-      if (exitEdge) {
-        this.currentEdgeId.set(exitEdge.id);
-        this.currentNodeId.set(exitEdge.target); // __ghost_out__
-      }
-      // Wait one tick before finishing this run
-      this.currentRun.set(run);
-      // Mark that next tick will actually increment run
-      this.currentNodeId.set('__ghost_out__');
-      return;
-    }
-
-    // If we are on ghost_out after traversing exit sentinel, finish this run
-    if (node === '__ghost_out__') {
-      run += 1;
-      this.currentRun.set(run);
-      if (run >= this.config().runs) {
-        this.stop();
-        return;
-      }
-      // Start next run
-      this.currentNodeId.set('ENTRY');
-      this.currentEdgeId.set('__entry_sentinel__');
-      const entryEdge = gd.edges.find(e => e.id === '__entry_sentinel__');
-      if (entryEdge && this.instrumented.has(entryEdge.id)) this.inc(entryEdge.id);
-      return;
-    }
-
-    // Pick next edge from current node
-    const out = this.getOutgoing(gd, node);
-    if (out.length === 0) {
-      // dead end: jump to EXIT to avoid hang and continue next run
-      this.currentNodeId.set('EXIT');
-      this.currentEdgeId.set('__exit_sentinel__');
-      return;
-    }
-    const edge = this.pickEdge(out);
-    this.currentEdgeId.set(edge.id);
-    if (this.instrumented.has(edge.id)) this.inc(edge.id);
-    this.currentNodeId.set(edge.target);
-  }
-
-  // --- Helpers --------------------------------------------------------------
-
-  private stopTimer() {
-    if (this.timer) { clearInterval(this.timer); this.timer = null; }
-  }
-
-  private inc(edgeId: string) {
-    this.counters.update(c => ({ ...c, [edgeId]: (c[edgeId] ?? 0) + 1 }));
-  }
-
-  private getOutgoing(gd: GraphData, nodeId: string): GraphEdge[] {
-    return gd.edges.filter(e => e.source === nodeId);
-  }
-
-  private pickEdge(edges: GraphEdge[]): GraphEdge {
-    // Probabilities proportional to weight > 0; if all zero -> uniform
-    const weights = edges.map(e => (typeof e.weight === 'number' ? e.weight : 0));
-    const sum = weights.reduce((a, b) => a + b, 0);
-    if (sum <= 0) {
-      const idx = Math.floor(this.rng() * edges.length);
-      return edges[Math.min(idx, edges.length - 1)];
-    }
-    let r = this.rng() * sum;
-    for (let i = 0; i < edges.length; i++) {
-      if (r < weights[i]) return edges[i];
-      r -= weights[i];
-    }
-    return edges[edges.length - 1];
   }
 }

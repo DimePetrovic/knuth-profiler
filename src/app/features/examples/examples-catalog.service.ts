@@ -1,4 +1,12 @@
 import { Injectable } from '@angular/core';
+import {
+  ENTRY_NODE_ID,
+  ENTRY_SENTINEL_ID,
+  EXIT_NODE_ID,
+  EXIT_SENTINEL_ID,
+  GHOST_IN_NODE_ID,
+  GHOST_OUT_NODE_ID
+} from '../../core/graph/graph.constants';
 import { ExampleItem, GraphData } from '../../core/graph/graph.types';
 
 @Injectable({ providedIn: 'root' })
@@ -27,19 +35,18 @@ export class ExamplesCatalogService {
     const nodes = [...data.nodes];
     const edges = [...data.edges];
 
-    const hasEntry = nodes.some(n => n.id === 'ENTRY');
-    const hasExit  = nodes.some(n => n.id === 'EXIT');
+    const hasEntry = nodes.some(n => n.id === ENTRY_NODE_ID);
+    const hasExit  = nodes.some(n => n.id === EXIT_NODE_ID);
     if (!hasEntry || !hasExit) return { nodes, edges };
 
-    const GIN = '__ghost_in__', GOUT = '__ghost_out__';
-    if (!nodes.some(n => n.id === GIN)) nodes.push({ id: GIN, label: '', kind: 'normal', data: { ghost: true } });
-    if (!nodes.some(n => n.id === GOUT)) nodes.push({ id: GOUT, label: '', kind: 'normal', data: { ghost: true } });
+    if (!nodes.some(n => n.id === GHOST_IN_NODE_ID)) nodes.push({ id: GHOST_IN_NODE_ID, label: '', kind: 'normal', data: { ghost: true } });
+    if (!nodes.some(n => n.id === GHOST_OUT_NODE_ID)) nodes.push({ id: GHOST_OUT_NODE_ID, label: '', kind: 'normal', data: { ghost: true } });
 
-    if (!edges.some(e => e.source === GIN && e.target === 'ENTRY' && e.kind === 'entry'))
-      edges.push({ id: '__entry_sentinel__', source: GIN, target: 'ENTRY', label: '', kind: 'entry', weight: 0 });
+    if (!edges.some(e => e.source === GHOST_IN_NODE_ID && e.target === ENTRY_NODE_ID && e.kind === 'entry'))
+      edges.push({ id: ENTRY_SENTINEL_ID, source: GHOST_IN_NODE_ID, target: ENTRY_NODE_ID, label: '', kind: 'entry', weight: 0 });
 
-    if (!edges.some(e => e.source === 'EXIT' && e.target === GOUT && e.kind === 'exit'))
-      edges.push({ id: '__exit_sentinel__', source: 'EXIT', target: GOUT, label: '', kind: 'exit', weight: 0 });
+    if (!edges.some(e => e.source === EXIT_NODE_ID && e.target === GHOST_OUT_NODE_ID && e.kind === 'exit'))
+      edges.push({ id: EXIT_SENTINEL_ID, source: EXIT_NODE_ID, target: GHOST_OUT_NODE_ID, label: '', kind: 'exit', weight: 0 });
 
     return { nodes, edges };
   }

@@ -1,5 +1,5 @@
 // Basic node kinds for readability and styling.
-export type NodeKind = 'entry' | 'exit' | 'normal' | 'decision';
+export type NodeKind = 'entry' | 'exit' | 'normal' | 'decision' | 'ghost_out';
 
 // Edge classification; 'entry'/'exit' represent sentinel edges.
 export type EdgeKind = 'normal' | 'entry' | 'exit' | 'back' | 'chord';

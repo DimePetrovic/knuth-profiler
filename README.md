@@ -1,59 +1,115 @@
-# KnuthProfiler
+# Knuth Profiler
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 19.2.17.
+Interactive Angular application for visualizing a Knuth-style profiling workflow on directed graphs:
 
-## Development server
+- choose an example control-flow graph
+- compute max-weight spanning tree (MST)
+- derive instrumentation set (non-tree edges)
+- run simulation to collect counters
+- reconstruct missing edge counts from balance equations
 
-To start a local development server, run:
+## Stack
 
-```bash
-ng serve
-```
+- Angular 19 (standalone components + signals)
+- Cytoscape.js (+ dagre and ELK layouts)
+- Tailwind CSS v4
+- Karma + Jasmine for unit tests
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+## Run Locally
 
-## Code scaffolding
-
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
-
-```bash
-ng generate component component-name
-```
-
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+Install dependencies:
 
 ```bash
-ng generate --help
+npm install
 ```
 
-## Building
-
-To build the project run:
+Start development server:
 
 ```bash
-ng build
+npm start
 ```
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
+Open:
 
-## Running unit tests
+```text
+http://localhost:4200/
+```
 
-To execute unit tests with the [Karma](https://karma-runner.github.io) test runner, use the following command:
+Build production bundle:
 
 ```bash
-ng test
+npm run build
 ```
 
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
+Run tests:
 
 ```bash
-ng e2e
+npm test -- --watch=false --browsers=ChromeHeadless
 ```
 
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
+## High-Level Architecture
 
-## Additional Resources
+Core folders:
 
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+- `src/app/core/graph`
+	- domain types and constants
+	- pure graph algorithms (`graph-analysis.ts`)
+- `src/app/features/examples`
+	- state orchestration services
+	- reconstruction and simulation logic helpers
+- `src/app/shared/graph-canvas`
+	- Cytoscape rendering layer
+	- extracted canvas config and overlay utilities
+- `src/app/pages/examples-page`
+	- page-level bindings via workflow facade
+
+## State Model (Signals)
+
+Main services:
+
+- `VisualizationStateService`
+	- selected graph example
+	- current visualization step (0-5)
+	- computed MST and instrumentation sets
+- `SimulationStateService`
+	- simulation config and runtime state
+	- delegates traversal logic to `simulation.engine.ts` (pure engine)
+- `ReconstructionStateService`
+	- reconstructed counters and explanation steps
+	- delegates equation-solving helpers to `reconstruction.helpers.ts`
+
+Page orchestration:
+
+- `ExamplesWorkflowFacade`
+	- centralizes step transitions and cross-service reset rules
+	- keeps page component thin and declarative
+
+## Domain Terms
+
+Internal terminology mapping used in code:
+
+- ENTRY / EXIT: workflow start/end nodes
+- Sentinel edges:
+	- `__entry_sentinel__`
+	- `__exit_sentinel__`
+- Instrumented edges: edges selected for direct counting
+- Reconstruction: solving unknown counts from flow-balance constraints
+
+## Testing Notes
+
+Current test suite includes:
+
+- characterization tests for graph analysis and reconstruction helpers
+- engine tests for pure simulation traversal logic
+- state service tests for configuration and state transitions
+- facade tests for examples workflow transitions
+
+If you add new example graphs or change transition rules, update:
+
+- corresponding service/facade tests
+- helper characterization tests where behavior is intentionally preserved
+
+## Naming Note
+
+`VisualizationStateService` currently contains the graph-step state used by the examples workflow.
+If desired, a future rename to `ExamplesGraphStateService` can improve semantic clarity.
