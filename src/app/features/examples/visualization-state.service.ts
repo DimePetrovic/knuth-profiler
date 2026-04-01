@@ -68,4 +68,18 @@ export class ExamplesGraphStateService {
     this.importedGraphData.set(null);
     this.reset();
   }
+
+  clearExampleSelection(): void {
+    this.selectedId.set('');
+    this.reset();
+  }
+
+  resetAllState(clearExampleSelection = false): void {
+    this.importedGraphData.set(null);
+    if (clearExampleSelection) {
+      this.selectedId.set('');
+    }
+    this.layout.set('dagre');
+    this.reset();
+  }
 }

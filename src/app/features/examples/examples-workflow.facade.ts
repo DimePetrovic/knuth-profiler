@@ -140,6 +140,23 @@ export class ExamplesWorkflowFacade {
     this.visualizationContext.set('cfg');
   }
 
+  enterExamplesPage(): void {
+    this.useExamplesContext();
+    this.visualization.resetAllState(true);
+    this.resetDerivedState();
+  }
+
+  enterCfgPage(): void {
+    this.useCfgContext();
+    this.visualization.resetAllState(false);
+    this.resetDerivedState();
+  }
+
+  finishAndReset(): void {
+    this.visualization.resetAllState(true);
+    this.resetDerivedState();
+  }
+
   pickExample(exampleId: string): void {
     this.visualization.pickExample(exampleId);
     this.resetDerivedState();

@@ -53,8 +53,7 @@ export class CfgImportPageComponent implements OnDestroy {
   });
 
   constructor() {
-    this.workflow.useCfgContext();
-    this.workflow.clearImportedGraph();
+    this.workflow.enterCfgPage();
   }
 
   ngOnDestroy(): void {

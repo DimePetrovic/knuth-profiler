@@ -14,6 +14,6 @@ export class ExamplesPageComponent {
   protected readonly facade = inject(ExamplesWorkflowFacade);
 
   constructor() {
-    this.facade.useExamplesContext();
+    this.facade.enterExamplesPage();
   }
 }

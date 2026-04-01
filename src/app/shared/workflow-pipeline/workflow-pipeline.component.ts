@@ -69,6 +69,7 @@ export class WorkflowPipelineComponent {
   }
 
   async onFinish(): Promise<void> {
+    this.facade.finishAndReset();
     await this.router.navigateByUrl('/');
   }
 }
