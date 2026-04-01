@@ -1,118 +1,28 @@
-<section class="p-4 md:p-8">
-  <header class="mb-6">
-    <h2 class="text-2xl font-semibold">Примери</h2>
-    <p class="text-gray-600">Изабери пример, покрени визуализацију и симулацију.</p>
-  </header>
+<section class="p-4 md:p-8 space-y-4">
+  <app-workflow-pipeline
+    [facade]="facade"
+    [title]="'Примери'"
+    [subtitle]="'Изабери пример па води корисника кроз исти ток корака.'"
+    [firstStepTitle]="'Корак 1: Избор примера'">
 
-  <!-- Examples list -->
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-    <button
-      *ngFor="let ex of facade.examples"
-      type="button"
-      class="text-left rounded-xl border p-4 hover:bg-gray-50"
-      [class.border-gray-900]="ex.id === facade.selectedId()"
-      (click)="facade.pickExample(ex.id)">
-      <div class="font-medium">{{ ex.title }}</div>
-      <div class="text-sm text-gray-600">{{ ex.description }}</div>
-    </button>
-  </div>
-
-  <!-- Stepper & layout controls -->
-  <div class="flex flex-wrap items-center gap-3 mb-3">
-    <div class="flex items-center gap-2">
-      <button class="px-3 py-1.5 rounded-lg border border-gray-300 hover:bg-gray-100" (click)="facade.resetSteps()">Ресетуј</button>
-      <button class="px-3 py-1.5 rounded-lg border border-gray-300 hover:bg-gray-100" [disabled]="facade.step() === 0" (click)="facade.prevStep()">Назад</button>
-      <button *ngIf="facade.canStartVisualization()" class="px-3 py-1.5 rounded-lg bg-gray-900 text-white hover:opacity-90" (click)="facade.startStep()">Покрени визуализацију</button>
-      <button *ngIf="facade.canAdvance()" class="px-3 py-1.5 rounded-lg bg-gray-900 text-white hover:opacity-90" (click)="facade.nextStep()">Даље</button>
-    </div>
-
-    <div class="flex items-center gap-2 ml-auto">
-      <label class="text-sm text-gray-600">Распоред:</label>
-      <select #layoutSelect class="px-3 py-1.5 rounded-lg border border-gray-300"
-              [value]="facade.layoutName()"
-              (change)="facade.setLayout(layoutSelect.value)">
-        <option value="dagre">Dagre</option>
-        <option value="elk">ELK</option>
-      </select>
-    </div>
-  </div>
-
-  <!-- Step info -->
-  <div class="mb-3 text-sm text-gray-700">
-    {{ facade.stepDescription() }}
-  </div>
-
-  <!-- Simulation controls (Korak 4+) -->
-  <div *ngIf="facade.isSimulationStep()" class="mb-4 grid grid-cols-1 md:grid-cols-3 gap-3">
-    <div class="flex items-center gap-2">
-      <label class="text-sm text-gray-600 w-32">Број покретања</label>
-      <input #runsInput type="number" min="1" class="px-3 py-1.5 rounded-lg border border-gray-300 w-full"
-             [value]="facade.runs()" (input)="facade.setRuns(runsInput.valueAsNumber)">
-    </div>
-    <div class="flex items-center gap-2">
-      <label class="text-sm text-gray-600 w-32">Брзина анимације</label>
-      <input #speedInput type="range" min="0.25" max="3" step="0.25" class="w-full"
-             [value]="facade.speed()" (input)="facade.setSpeed(speedInput.valueAsNumber)">
-    </div>
-  </div>
-
-  <div *ngIf="facade.isSimulationStep()" class="flex items-center gap-2 mb-3">
-    <button class="px-3 py-1.5 rounded-lg bg-gray-900 text-white hover:opacity-90" [disabled]="facade.isRunning() && !facade.isPaused()" (click)="facade.simStart()">Покрени</button>
-    <button class="px-3 py-1.5 rounded-lg border border-gray-300 hover:bg-gray-100" [disabled]="!facade.isRunning() || facade.isPaused()" (click)="facade.simPause()">Пауза</button>
-    <button class="px-3 py-1.5 rounded-lg border border-gray-300 hover:bg-gray-100" [disabled]="!facade.isRunning() || !facade.isPaused()" (click)="facade.simResume()">Настави</button>
-    <button class="px-3 py-1.5 rounded-lg border border-gray-300 hover:bg-gray-100" [disabled]="!facade.isRunning()" (click)="facade.simStop()">Заустави</button>
-    <button class="px-3 py-1.5 rounded-lg border border-gray-300 hover:bg-gray-100" (click)="facade.simReset()">Ресетуј бројач</button>
-
-    <div class="ml-auto text-sm text-gray-600">
-      Статус: {{ facade.simulationStatusLabel() }} — Покретање: {{ facade.currentRun() }}/{{ facade.runs() }}
-    </div>
-  </div>
-
-  <!-- Reconstruction controls (Korak 5) -->
-  <div *ngIf="facade.isReconstructionStep()" class="mb-4 border rounded-xl p-4 bg-white">
-    <div class="flex flex-wrap items-center gap-2">
-      <button class="px-3 py-1.5 rounded-lg bg-gray-900 text-white hover:opacity-90"
-              (click)="facade.reconComputeNext()"
-              [disabled]="facade.pendingTreeEdges().length === 0">
-        Израчунај следећу грану
+    <div pipeline-step-0 class="grid grid-cols-1 md:grid-cols-2 gap-3">
+      <button
+        *ngFor="let ex of facade.examples"
+        type="button"
+        class="text-left rounded-xl border p-4 hover:bg-gray-50"
+        [class.border-gray-900]="ex.id === facade.selectedId()"
+        (click)="facade.pickExample(ex.id)">
+        <div class="font-medium">{{ ex.title }}</div>
+        <div class="text-sm text-gray-600">{{ ex.description }}</div>
       </button>
-
-      <button class="px-3 py-1.5 rounded-lg border border-gray-300 hover:bg-gray-100"
-              (click)="facade.reconPrev()" [disabled]="facade.reconIdx() <= 0">
-        Претходно
-      </button>
-      <button class="px-3 py-1.5 rounded-lg border border-gray-300 hover:bg-gray-100"
-              (click)="facade.reconNext()" [disabled]="facade.reconIdx() + 1 >= facade.reconSteps().length">
-        Следеће
-      </button>
-      <button class="px-3 py-1.5 rounded-lg border border-gray-300 hover:bg-gray-100"
-              (click)="facade.reconReset()" [disabled]="facade.reconSteps().length === 0">
-        Ресетуј
-      </button>
-
-      <div class="ml-auto text-sm text-gray-600">
-        Преостало за решавање: {{ facade.pendingTreeEdges().length }} грана
-      </div>
     </div>
+  </app-workflow-pipeline>
 
-    <div class="mt-3 text-sm text-gray-800 whitespace-pre-line">
-      <ng-container *ngIf="facade.reconSteps().length > 0 && facade.reconIdx() >= 0; else noReconYet">
-        {{ facade.reconSteps()[facade.reconIdx()].text }}
-        <div class="mt-2 text-gray-600">
-          Решена грана: <span class="font-medium">{{ facade.reconSteps()[facade.reconIdx()].solvedEdgeId }}</span>,
-          вредност: <span class="font-medium">{{ facade.reconSteps()[facade.reconIdx()].value }}</span>
-        </div>
-      </ng-container>
-      <ng-template #noReconYet>
-        Кликни „Израчунај следећу грану“ да бисмо применили баланс у првом доступном чвору и добили вредност tree гране.
-      </ng-template>
-    </div>
-  </div>
-
-  <!-- Graph viewer -->
-  <app-graph-canvas
-    [data]="facade.selectedData()"
-    [layoutName]="facade.layoutName()"
-    [overlay]="facade.overlay()">
-  </app-graph-canvas>
+  <section *ngIf="facade.step() > 0" class="border rounded-xl p-4 bg-white min-h-[520px]">
+    <app-graph-canvas
+      [data]="facade.selectedData()"
+      [layoutName]="facade.layoutName()"
+      [overlay]="facade.overlay()">
+    </app-graph-canvas>
+  </section>
 </section>

@@ -7,6 +7,7 @@ import {
 import { GraphData } from '../../core/graph/graph.types';
 import {
   buildKnownCounts,
+  ensureKnownZeroCounts,
   findSolvableNodeAndEdge,
   renderBalanceText,
   solveBalanceAtNode
@@ -35,6 +36,15 @@ describe('reconstruction helpers', () => {
     expect(knownCounts.get(ENTRY_SENTINEL_ID)).toBe(7);
     expect(knownCounts.get(EXIT_SENTINEL_ID)).toBe(7);
     expect(knownCounts.get('e0')).toBe(7);
+  });
+
+  it('fills missing instrumented counters with zero', () => {
+    const knownCounts = buildKnownCounts({ [ENTRY_SENTINEL_ID]: 3 }, {});
+    ensureKnownZeroCounts(knownCounts, ['e0', 'e1']);
+
+    expect(knownCounts.get('e0')).toBe(0);
+    expect(knownCounts.get('e1')).toBe(0);
+    expect(knownCounts.get(ENTRY_SENTINEL_ID)).toBe(3);
   });
 
   it('finds a solvable node when exactly one tree edge is still unknown', () => {

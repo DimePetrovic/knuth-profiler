@@ -79,7 +79,7 @@ describe('CfgImportPageComponent', () => {
 
     expect(component.state().result?.version).toBe('cfg-json-1');
     expect(component.state().graphData).toBeTruthy();
-    expect(component.message()).toContain('CFG spreman');
+    expect(component.message()).toContain('CFG је спреман');
 
     const data = component.state().graphData!;
     expect(data.nodes.some(n => n.id === 'ENTRY')).toBeTrue();

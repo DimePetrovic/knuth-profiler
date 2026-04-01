@@ -102,7 +102,7 @@ export class ExamplesCatalogService {
         this.e('e6', 'M', 'EXIT', '', 77, 'exit')
       ]
     };
-    return { id: 'if-else', title: 'If / Else', description: 'Гранање са спајањем путања.', data };
+    return { id: 'if-else', title: 'Ако / Иначе', description: 'Гранање са спајањем путања.', data };
   }
 
   // 3) While loop

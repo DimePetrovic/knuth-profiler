@@ -5,6 +5,7 @@ import { ExamplesGraphStateService } from './visualization-state.service';
 import { SimulationStateService } from './simulation-state.service';
 import {
   buildKnownCounts,
+  ensureKnownZeroCounts,
   findSolvableNodeAndEdge,
   renderBalanceText,
   solveBalanceAtNode
@@ -135,6 +136,7 @@ export class ReconstructionStateService {
    * Exit sentinel is not displayed; it's only used internally for balance at EXIT node.
    */
   private allKnownCounts(): Map<string, number> {
-    return buildKnownCounts(this.simCounters, this.reconCounters());
+    const knownCounts = buildKnownCounts(this.simCounters, this.reconCounters());
+    return ensureKnownZeroCounts(knownCounts, this.viz.instrumentedEdgeIds());
   }
 }

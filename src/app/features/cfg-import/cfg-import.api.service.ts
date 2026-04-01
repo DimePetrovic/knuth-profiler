@@ -14,7 +14,7 @@ export class CfgImportApiService {
 
     if (!response.ok) {
       const detail = await safeReadText(response);
-      throw new Error(`Failed to create job: ${response.status} ${detail}`);
+      throw new Error(`Неуспешно креирање посла: ${response.status} ${detail}`);
     }
 
     const body = await response.json() as { jobId: string };
@@ -33,7 +33,7 @@ export class CfgImportApiService {
 
     if (!response.ok) {
       const detail = await safeReadText(response);
-      throw new Error(`Failed to upload job: ${response.status} ${detail}`);
+      throw new Error(`Неуспешна отпрема посла: ${response.status} ${detail}`);
     }
 
     const body = await response.json() as { jobId: string };
@@ -43,10 +43,10 @@ export class CfgImportApiService {
   async getStatus(jobId: string): Promise<CfgJobStatus> {
     const response = await fetch(`${API_BASE_URL}/cfg/jobs/${jobId}`);
     if (response.status === 404) {
-      throw new Error('Job not found.');
+      throw new Error('Посао није пронађен.');
     }
     if (!response.ok) {
-      throw new Error(`Failed to read status: ${response.status}`);
+      throw new Error(`Неуспешно читање статуса: ${response.status}`);
     }
     return response.json() as Promise<CfgJobStatus>;
   }
@@ -58,10 +58,10 @@ export class CfgImportApiService {
       return { pending: true };
     }
     if (response.status === 404) {
-      throw new Error('Job not found.');
+      throw new Error('Посао није пронађен.');
     }
     if (!response.ok) {
-      throw new Error(`Failed to read result: ${response.status}`);
+      throw new Error(`Неуспешно читање резултата: ${response.status}`);
     }
 
     const payload = await response.json() as CfgResultJson | CfgErrorJson;

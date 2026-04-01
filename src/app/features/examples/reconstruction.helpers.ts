@@ -23,6 +23,16 @@ export function buildKnownCounts(simCounters: Counters, reconCounters: Counters)
   return knownCounts;
 }
 
+export function ensureKnownZeroCounts(knownCounts: Map<string, number>, edgeIds: readonly string[]): Map<string, number> {
+  for (const edgeId of edgeIds) {
+    if (!knownCounts.has(edgeId)) {
+      knownCounts.set(edgeId, 0);
+    }
+  }
+
+  return knownCounts;
+}
+
 export function findSolvableNodeAndEdge(
   data: GraphData,
   pendingTreeEdgeIds: readonly string[],

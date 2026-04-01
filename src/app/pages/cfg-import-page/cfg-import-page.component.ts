@@ -1,16 +1,17 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnDestroy, inject, signal } from '@angular/core';
+import { Component, OnDestroy, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ExamplesWorkflowFacade } from '../../features/examples/examples-workflow.facade';
 import { CfgImportApiService } from '../../features/cfg-import/cfg-import.api.service';
 import { mapCfgJsonToGraphData } from '../../features/cfg-import/cfg-import.adapter';
 import { CfgErrorJson, CfgImportViewState, CfgLanguage, CfgResultJson } from '../../features/cfg-import/cfg-import.types';
 import { GraphCanvasComponent } from '../../shared/graph-canvas/graph-canvas.component';
+import { WorkflowPipelineComponent } from '../../shared/workflow-pipeline/workflow-pipeline.component';
 
 @Component({
   selector: 'app-cfg-import-page',
   standalone: true,
-  imports: [CommonModule, FormsModule, GraphCanvasComponent],
+  imports: [CommonModule, FormsModule, GraphCanvasComponent, WorkflowPipelineComponent],
   templateUrl: './cfg-import-page.component.html',
 })
 export class CfgImportPageComponent implements OnDestroy {
@@ -31,6 +32,30 @@ export class CfgImportPageComponent implements OnDestroy {
     error: null,
     graphData: null,
   });
+
+  readonly workflowTitle = computed(() => {
+    switch (this.workflow.step()) {
+      case 0:
+        return 'Корак 1: Увоз CFG-а';
+      case 1:
+        return 'Корак 2: Тежине';
+      case 2:
+        return 'Корак 3: MST';
+      case 3:
+        return 'Корак 4: Инструментација';
+      case 4:
+        return 'Корак 5: Мерења';
+      case 5:
+        return 'Корак 6: Реконструкција';
+      default:
+        return 'Увоз CFG-а';
+    }
+  });
+
+  constructor() {
+    this.workflow.useCfgContext();
+    this.workflow.clearImportedGraph();
+  }
 
   ngOnDestroy(): void {
     this.stopPolling();
@@ -74,13 +99,6 @@ export class CfgImportPageComponent implements OnDestroy {
     }
   }
 
-  onReconComputeNext(): void {
-    const step = this.workflow.reconComputeNext();
-    if (!step) {
-      this.message.set(this.workflow.reconLastMessage() || 'Nije moguće izračunati sledeću granu.');
-    }
-  }
-
   private startPolling(jobId: string): void {
     this.stopPolling();
     this.pollTimer = setInterval(() => {
@@ -118,7 +136,7 @@ export class CfgImportPageComponent implements OnDestroy {
         graphData,
       }));
       this.workflow.loadImportedGraph(graphData);
-      this.message.set('CFG spreman. Pokreni vizualizaciju kroz korake kao na primerima.');
+      this.message.set('CFG је спреман. Покрени визуализацију кроз кораке као на примерима.');
     } catch (error) {
       this.stopPolling();
       this.isSubmitting.set(false);
@@ -152,5 +170,5 @@ function toErrorMessage(error: unknown): string {
   if (error instanceof Error) {
     return error.message;
   }
-  return 'Unknown error.';
+  return 'Непозната грешка.';
 }

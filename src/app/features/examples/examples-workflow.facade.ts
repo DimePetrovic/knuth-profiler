@@ -1,4 +1,4 @@
-import { computed, inject, Injectable } from '@angular/core';
+import { computed, inject, Injectable, signal } from '@angular/core';
 import { GraphData, GraphLayoutName, ReconStep, VizStep } from '../../core/graph/graph.types';
 import { ReconstructionStateService } from './reconstruction-state.service';
 import { SimulationStateService } from './simulation-state.service';
@@ -18,6 +18,8 @@ export class ExamplesWorkflowFacade {
   private readonly visualization = inject(ExamplesGraphStateService);
   private readonly simulation = inject(SimulationStateService);
   private readonly reconstruction = inject(ReconstructionStateService);
+  private readonly visualizationContext = signal<'examples' | 'cfg'>('examples');
+  private readonly context = computed<'examples' | 'cfg'>(() => this.visualizationContext());
 
   readonly examples = this.visualization.examples;
   readonly selectedId = this.visualization.selectedId;
@@ -25,6 +27,7 @@ export class ExamplesWorkflowFacade {
   readonly layoutName = this.visualization.layout;
   readonly selectedData = computed<GraphData | null>(() => this.visualization.graphData());
   readonly hasGraph = computed(() => this.selectedData() !== null);
+  readonly hasImportedGraph = computed(() => this.visualization.importedGraphData() !== null);
 
   readonly overlay = computed(() => {
     const baseOverlay = this.visualization.overlay();
@@ -43,6 +46,7 @@ export class ExamplesWorkflowFacade {
   readonly isRunning = this.simulation.isRunning;
   readonly isPaused = this.simulation.isPaused;
   readonly currentRun = this.simulation.currentRun;
+  readonly hasSimulationData = computed(() => Object.keys(this.simulation.counters()).length > 0);
   readonly simulationStatusLabel = computed(() => {
     if (this.isRunning() && !this.isPaused()) {
       return 'Ради';
@@ -52,6 +56,10 @@ export class ExamplesWorkflowFacade {
       return 'Пауза';
     }
 
+    if (!this.isRunning() && this.currentRun() >= this.runs() && this.hasSimulationData()) {
+      return 'Завршено';
+    }
+
     return 'Стојеће';
   });
 
@@ -59,12 +67,78 @@ export class ExamplesWorkflowFacade {
   readonly reconIdx = this.reconstruction.idx;
   readonly pendingTreeEdges = this.reconstruction.pendingTreeEdgeIds;
   readonly reconLastMessage = this.reconstruction.lastComputeMessage;
+  readonly reconCurrentNodeLabel = computed(() => {
+    const idx = this.reconIdx();
+    const steps = this.reconSteps();
+    if (idx < 0 || idx >= steps.length) {
+      return null;
+    }
+
+    const nodeId = steps[idx].nodeId;
+    const node = this.selectedData()?.nodes.find(n => n.id === nodeId);
+    return node?.label || nodeId;
+  });
   readonly stepDescription = computed(() => STEP_DESCRIPTIONS[this.step()]);
 
   readonly canStartVisualization = computed(() => this.step() === 0);
   readonly canAdvance = computed(() => this.step() > 0 && this.step() < 5);
   readonly isSimulationStep = computed(() => this.step() === 4);
   readonly isReconstructionStep = computed(() => this.step() >= 5);
+  readonly canProceedFromCurrentStep = computed(() => {
+    const step = this.step();
+    const graphReady = this.context() === 'cfg' ? this.hasImportedGraph() : this.hasGraph();
+
+    if (step === 0) {
+      return graphReady;
+    }
+
+    if (step >= 1 && step <= 3) {
+      return graphReady;
+    }
+
+    if (step === 4) {
+      return this.hasSimulationData() && !this.isRunning() && this.currentRun() >= this.runs();
+    }
+
+    return false;
+  });
+  readonly nextBlockedReason = computed(() => {
+    const step = this.step();
+    const graphReady = this.context() === 'cfg' ? this.hasImportedGraph() : this.hasGraph();
+
+    if (step === 0 && !graphReady) {
+      if (this.context() === 'cfg') {
+        return 'Учитај CFG граф и сачекај успешну обраду да откључаш следећи корак.';
+      }
+      return 'Изабери пример да откључаш следећи корак.';
+    }
+
+    if (step >= 1 && step <= 3 && !graphReady) {
+      return 'Граф није спреман за следећи корак.';
+    }
+
+    if (step === 4) {
+      if (this.isRunning()) {
+        return 'Сачекај да се симулација заврши или је ручно заустави пре преласка на реконструкцију.';
+      }
+      if (this.currentRun() < this.runs()) {
+        return 'Сачекај да се заврше сви пролази кроз граф (статус: Завршено) пре преласка на реконструкцију.';
+      }
+      if (!this.hasSimulationData()) {
+        return 'Покрени симулацију да би се појавили бројачи и откључала реконструкција.';
+      }
+    }
+
+    return null;
+  });
+
+  useExamplesContext(): void {
+    this.visualizationContext.set('examples');
+  }
+
+  useCfgContext(): void {
+    this.visualizationContext.set('cfg');
+  }
 
   pickExample(exampleId: string): void {
     this.visualization.pickExample(exampleId);
