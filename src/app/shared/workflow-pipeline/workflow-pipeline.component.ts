@@ -12,6 +12,7 @@ import { ExamplesWorkflowFacade } from '../../features/examples/examples-workflo
 export class WorkflowPipelineComponent {
   private readonly router = inject(Router);
   protected isExportingPdf = false;
+  protected showCodePreview = false;
   @Input({ required: true }) facade!: ExamplesWorkflowFacade;
   @Input() title = 'Ток рада';
   @Input() subtitle = '';
@@ -68,6 +69,10 @@ export class WorkflowPipelineComponent {
 
   canGoNext(): boolean {
     return this.facade.canProceedFromCurrentStep();
+  }
+
+  toggleCodePreview(): void {
+    this.showCodePreview = !this.showCodePreview;
   }
 
   async onFinish(): Promise<void> {

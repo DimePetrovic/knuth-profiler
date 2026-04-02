@@ -19,9 +19,14 @@ describe('SimulationStateService', () => {
       expect(service.config().runs).toBe(10);
     });
 
-    it('should clamp run count to minimum 1', () => {
+    it('should clamp run count to minimum 0', () => {
       service.setRuns(0);
-      expect(service.config().runs).toBe(1);
+      expect(service.config().runs).toBe(0);
+    });
+
+    it('should normalize NaN run count to 0', () => {
+      service.setRuns(Number.NaN);
+      expect(service.config().runs).toBe(0);
     });
 
     it('should update speed', () => {
@@ -60,6 +65,7 @@ describe('SimulationStateService', () => {
       service.currentRun.set(3);
       service.currentNodeId.set('A');
       service.counters.set({ e1: 10 });
+      service.isConfigLocked.set(true);
 
       service.reset();
 
@@ -68,6 +74,7 @@ describe('SimulationStateService', () => {
       expect(service.currentEdgeId()).toBe(null);
       expect(service.counters()).toEqual({});
       expect(service.isRunning()).toBe(false);
+      expect(service.isConfigLocked()).toBe(false);
     });
 
     it('should provide overlay for canvas', () => {

@@ -18,7 +18,7 @@ const STEP_DESCRIPTIONS: Record<VizStep, string> = {
   3: 'Инструментација – означене су испрекиданом линијом гране које треба мерити.',
   4: 'Мерења – изабери број покретања и покрени симулацију. Током симулације видиш бројаче на инструментизованим гранама.',
   5: 'Реконструкција – приказ броја пролазака по свим гранама.',
-  6: 'Извештај – агрегирани показатељи ефеката селективне инструментације.'
+  6: 'Извештај – преглед показатеља ефеката селективне инструментације.'
 };
 
 const EXAMPLE_SOURCE_SNIPPETS: Record<string, { filename: string; language: string; source: string }> = {
@@ -123,6 +123,8 @@ export class ExamplesWorkflowFacade {
 
   readonly runs = computed(() => this.simulation.config().runs);
   readonly speed = computed(() => this.simulation.config().speed ?? 1);
+  readonly hasValidSimulationRuns = computed(() => Number.isFinite(this.runs()) && this.runs() > 0);
+  readonly isSimulationInputLocked = this.simulation.isConfigLocked;
   readonly isRunning = this.simulation.isRunning;
   readonly isPaused = this.simulation.isPaused;
   readonly currentRun = this.simulation.currentRun;
@@ -468,6 +470,9 @@ export class ExamplesWorkflowFacade {
   }
 
   simStart(): void {
+    if (!this.hasValidSimulationRuns()) {
+      return;
+    }
     this.simulation.start();
   }
 

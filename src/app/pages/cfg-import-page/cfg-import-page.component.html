@@ -2,7 +2,7 @@
   <app-workflow-pipeline
     [facade]="workflow"
     [title]="workflowTitle()"
-    [subtitle]="'Корак 1 је увоз и праћење посла; остали кораци користе исти ток као примери.'"
+    [subtitle]="workflowSubtitle()"
     [firstStepTitle]="'Корак 1: Учитавање фајла и праћење посла'">
 
     <div pipeline-step-0 class="space-y-4">

@@ -33,23 +33,51 @@
     {{ facade.stepDescription() }}
   </div>
 
+  <div *ngIf="facade.step() > 0 && facade.reportCodeArtifact() as artifact" class="space-y-2">
+    <button
+      type="button"
+      class="px-3 py-1.5 rounded-lg border border-gray-300 hover:bg-gray-100 text-sm"
+      (click)="toggleCodePreview()">
+      {{ showCodePreview ? 'Сакриј код' : 'Прикажи код' }}
+    </button>
+
+    <div *ngIf="showCodePreview" class="border rounded-xl p-3 bg-white text-sm text-gray-800 space-y-2">
+      <div class="flex flex-wrap items-center gap-2 text-xs text-gray-600">
+        <span class="px-2 py-1 rounded bg-gray-100 border border-gray-200">Фајл: {{ artifact.filename }}</span>
+        <span class="px-2 py-1 rounded bg-gray-100 border border-gray-200">Језик: {{ artifact.language }}</span>
+      </div>
+      <div class="border rounded-lg bg-gray-950 text-gray-100 overflow-auto max-h-[320px]">
+        <pre class="p-3 text-xs leading-5 font-mono whitespace-pre">{{ artifact.source }}</pre>
+      </div>
+    </div>
+  </div>
+
   <div *ngIf="facade.isSimulationStep()" class="grid grid-cols-1 md:grid-cols-2 gap-3">
     <div class="flex items-center gap-2">
       <label class="text-sm text-gray-600 w-32">Број покретања</label>
-      <input #runsInput type="number" min="1" class="px-3 py-1.5 rounded-lg border border-gray-300 w-full"
+      <input #runsInput type="number" min="1"
+             class="px-3 py-1.5 rounded-lg border border-gray-300 w-full transition-colors"
+             [class.bg-gray-100]="facade.isSimulationInputLocked()"
+             [class.text-gray-400]="facade.isSimulationInputLocked()"
+             [class.cursor-not-allowed]="facade.isSimulationInputLocked()"
+             [disabled]="facade.isSimulationInputLocked()"
              [value]="facade.runs()" (input)="facade.setRuns(runsInput.valueAsNumber)">
     </div>
 
     <div class="flex items-center gap-2">
       <label class="text-sm text-gray-600 w-32">Брзина</label>
-      <input #speedInput type="range" min="0.25" max="3" step="0.25" class="w-full"
+      <input #speedInput type="range" min="0.25" max="3" step="0.25"
+             class="w-full transition-opacity"
+             [class.opacity-40]="facade.isRunning() && !facade.isPaused()"
+             [class.cursor-not-allowed]="facade.isRunning() && !facade.isPaused()"
+             [disabled]="facade.isRunning() && !facade.isPaused()"
              [value]="facade.speed()" (input)="facade.setSpeed(speedInput.valueAsNumber)">
     </div>
   </div>
 
   <div *ngIf="facade.isSimulationStep()" class="flex flex-wrap items-center gap-2">
     <button class="px-3 py-1.5 rounded-lg bg-gray-900 text-white hover:opacity-90"
-            [disabled]="facade.isRunning() && !facade.isPaused()"
+            [disabled]="(facade.isRunning() && !facade.isPaused()) || !facade.hasValidSimulationRuns()"
             (click)="facade.simStart()">Покрени</button>
     <button class="px-3 py-1.5 rounded-lg border border-gray-300 hover:bg-gray-100"
             [disabled]="!facade.isRunning() || facade.isPaused()"

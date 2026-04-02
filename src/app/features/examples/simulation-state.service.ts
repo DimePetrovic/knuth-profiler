@@ -11,9 +11,10 @@ import {
 @Injectable({ providedIn: 'root' })
 export class SimulationStateService {
   // Config & runtime
-  readonly config = signal<SimulationConfig>({ runs: 20, maxStepsPerRun: 200, speed: 1, fastMode: false });
+  readonly config = signal<SimulationConfig>({ runs: 20, maxStepsPerRun: 200, speed: 3, fastMode: false });
   readonly isRunning = signal(false);
   readonly isPaused = signal(false);
+  readonly isConfigLocked = signal(false);
   readonly currentRun = signal(0);
   readonly currentNodeId = signal<string | null>(null);
   readonly currentEdgeId = signal<string | null>(null);
@@ -37,10 +38,18 @@ export class SimulationStateService {
   constructor(private viz: ExamplesGraphStateService) {}
 
   setRuns(n: number) {
-    this.config.update(c => ({ ...c, runs: Math.max(1, Math.floor(n)) }));
+    if (this.isConfigLocked()) {
+      return;
+    }
+
+    const normalizedRuns = Number.isFinite(n) ? Math.max(0, Math.floor(n)) : 0;
+    this.config.update(c => ({ ...c, runs: normalizedRuns }));
   }
   setSpeed(mult: number) {
-    this.config.update(c => ({ ...c, speed: Math.min(3, Math.max(0.25, mult)) }));
+    const normalizedSpeed = Number.isFinite(mult)
+      ? Math.min(3, Math.max(0.25, mult))
+      : 3;
+    this.config.update(c => ({ ...c, speed: normalizedSpeed }));
   }
   setFastMode(on: boolean) {
     this.config.update(c => ({ ...c, fastMode: on }));
@@ -50,6 +59,7 @@ export class SimulationStateService {
     this.stopTimer();
     this.isRunning.set(false);
     this.isPaused.set(false);
+    this.isConfigLocked.set(false);
     this.currentRun.set(0);
     this.currentNodeId.set(null);
     this.currentEdgeId.set(null);
@@ -58,8 +68,21 @@ export class SimulationStateService {
 
   start() {
     if (!this.gd) return;
-    this.reset();
+
+    this.stopTimer();
+    this.isRunning.set(false);
+    this.isPaused.set(false);
+    this.currentRun.set(0);
+    this.currentNodeId.set(null);
+    this.currentEdgeId.set(null);
+    this.counters.set({});
+
     const cfg = this.config();
+    if (!Number.isFinite(cfg.runs) || cfg.runs <= 0) {
+      return;
+    }
+
+    this.isConfigLocked.set(true);
     this.rng = Math.random;
     this.isRunning.set(true);
     if (cfg.fastMode) {
