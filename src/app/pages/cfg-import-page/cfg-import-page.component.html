@@ -11,7 +11,7 @@
           <div class="space-y-3">
             <div>
               <label class="block text-sm text-gray-600 mb-1">Језик</label>
-              <select class="w-full border rounded-lg px-3 py-2" [ngModel]="language()" (ngModelChange)="language.set($event)">
+              <select class="w-full border rounded-lg px-3 py-2" [ngModel]="language()" (ngModelChange)="onLanguageChange($event)">
                 <option value="c">C</option>
                 <option value="cpp">C++</option>
                 <option value="java">Java</option>
@@ -52,7 +52,15 @@
         <div class="hidden xl:block border rounded-xl p-4 bg-white h-full">
           <div class="h-full flex flex-col">
             <label class="block text-sm text-gray-600 mb-1">Изворни код (UTF-8)</label>
-            <textarea class="w-full flex-1 min-h-[320px] border rounded-lg px-3 py-2 font-mono text-sm resize-none" [ngModel]="source()" (ngModelChange)="source.set($event)"></textarea>
+            <textarea
+              class="w-full flex-1 min-h-[320px] border rounded-lg px-3 py-2 font-mono text-sm resize-none"
+              [class.bg-gray-100]="isSourceLocked()"
+              [readonly]="isSourceLocked()"
+              [ngModel]="source()"
+              (ngModelChange)="source.set($event)"></textarea>
+            <p *ngIf="isSourceLocked()" class="mt-2 text-xs text-gray-600">
+              Уређивач је закључан након отпремања фајла. Промени језик да се учита пример кода и омогући уређивање.
+            </p>
           </div>
         </div>
       </div>

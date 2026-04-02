@@ -20,6 +20,10 @@ export function mapCfgJsonToGraphData(payload: CfgResultJson): GraphData {
       id: mappedId,
       label: mappedId === ENTRY_NODE_ID ? 'ENTRY' : mappedId === EXIT_NODE_ID ? 'EXIT' : trimImportedNodeLabel(node.label || node.id),
       kind: mapNodeKind(node.kind, mappedId),
+      data: {
+        originalId: node.id,
+        range: node.range,
+      },
     };
   });
 

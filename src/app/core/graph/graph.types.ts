@@ -24,7 +24,7 @@ export interface GraphEdge {
   data?: Record<string, unknown>;// custom metadata
 }
 
-export type VizStep = 0 | 1 | 2 | 3 | 4 | 5; // 0:Start, 1:Weights, 2:MST, 3:Instr, 4:Measure, 5:Reconstruct
+export type VizStep = 0 | 1 | 2 | 3 | 4 | 5 | 6; // 0:Start, 1:Weights, 2:MST, 3:Instr, 4:Measure, 5:Reconstruct, 6:Report
 
 // Add counters and simulation overlay bits
 export interface Counters {

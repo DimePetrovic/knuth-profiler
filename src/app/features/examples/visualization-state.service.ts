@@ -49,7 +49,7 @@ export class ExamplesGraphStateService {
 
   // Step controls
   start(): void { this.step.set(1); }     // Start -> Weights
-  next(): void  { this.step.update(v => Math.min(5, (v + 1)) as VizStep); }
+  next(): void  { this.step.update(v => Math.min(6, (v + 1)) as VizStep); }
   prev(): void  { this.step.update(v => Math.max(0, (v - 1)) as VizStep); }
   reset(): void { this.step.set(0); }
 

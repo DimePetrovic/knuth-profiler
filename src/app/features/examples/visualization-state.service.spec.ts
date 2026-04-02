@@ -42,9 +42,15 @@ describe('VisualizationStateService', () => {
     });
 
     it('should reset to initial state', () => {
-      service.step.set(5);
+      service.step.set(6);
       service.reset();
       expect(service.step()).toBe(0);
+    });
+
+    it('should cap at report step', () => {
+      service.step.set(6);
+      service.next();
+      expect(service.step()).toBe(6);
     });
   });
 

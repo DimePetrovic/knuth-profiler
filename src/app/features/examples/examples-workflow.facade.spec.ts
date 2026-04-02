@@ -67,6 +67,18 @@ describe('ExamplesWorkflowFacade', () => {
     expect(reconstruction.reconCounters()).toEqual({});
   });
 
+  it('preserves simulation and reconstruction when moving from reconstruction to report', () => {
+    visualization.step.set(5);
+    simulation.counters.set({ e2: 10 });
+    reconstruction.reconCounters.set({ e0: 4 });
+
+    facade.nextStep();
+
+    expect(visualization.step()).toBe(6);
+    expect(simulation.counters()).toEqual({ e2: 10 });
+    expect(reconstruction.reconCounters()).toEqual({ e0: 4 });
+  });
+
   it('requires imported CFG graph in cfg context before first step can proceed', () => {
     facade.enterCfgPage();
     visualization.selectedId.set(visualization.examples[0].id);
@@ -97,7 +109,7 @@ describe('ExamplesWorkflowFacade', () => {
   it('finishAndReset clears both graph sources and runtime state', () => {
     facade.loadImportedGraph(IMPORTED_GRAPH_FIXTURE);
     facade.pickExample(visualization.examples[0].id);
-    visualization.step.set(5);
+    visualization.step.set(6);
     simulation.counters.set({ e9: 1 });
     reconstruction.reconCounters.set({ e0: 7 });
 

@@ -1,3 +1,5 @@
+/// <reference types="jasmine" />
+
 import { ComponentFixture, TestBed, fakeAsync, flushMicrotasks, tick } from '@angular/core/testing';
 
 import { CfgImportApiService } from '../../features/cfg-import/cfg-import.api.service';
@@ -27,6 +29,32 @@ describe('CfgImportPageComponent', () => {
 
   it('should create', () => {
     expect(component).toBeTruthy();
+  });
+
+  it('should update filename and source preset when language changes', () => {
+    component.onLanguageChange('python');
+
+    expect(component.language()).toBe('python');
+    expect(component.filename()).toBe('main.py');
+    expect(component.source()).toContain('def main():');
+    expect(component.isSourceLocked()).toBeFalse();
+  });
+
+  it('should infer language from uploaded filename and lock source editor', async () => {
+    api.createJobFromUpload.and.rejectWith(new Error('upload failed'));
+    const file = new File(['class Main {}'], 'Main.java', { type: 'text/plain' });
+    const input = document.createElement('input');
+    Object.defineProperty(input, 'files', {
+      value: [file],
+      writable: false,
+    });
+
+    await component.uploadFile({ target: input } as unknown as Event);
+
+    expect(component.language()).toBe('java');
+    expect(component.filename()).toBe('Main.java');
+    expect(component.isSourceLocked()).toBeTrue();
+    expect(api.createJobFromUpload).toHaveBeenCalledWith('java', file);
   });
 
   it('should run source submission scenario and populate graph', fakeAsync(() => {

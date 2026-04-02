@@ -8,6 +8,34 @@ import { CfgErrorJson, CfgImportViewState, CfgLanguage, CfgResultJson } from '..
 import { GraphCanvasComponent } from '../../shared/graph-canvas/graph-canvas.component';
 import { WorkflowPipelineComponent } from '../../shared/workflow-pipeline/workflow-pipeline.component';
 
+const LANGUAGE_PRESETS: Record<CfgLanguage, { filename: string; source: string; extensions: readonly string[] }> = {
+  c: {
+    filename: 'main.c',
+    source: 'int main() {\n  return 0;\n}',
+    extensions: ['.c', '.h'],
+  },
+  cpp: {
+    filename: 'main.cpp',
+    source: '#include <iostream>\n\nint main() {\n  std::cout << "Hello" << std::endl;\n  return 0;\n}',
+    extensions: ['.cpp', '.cc', '.cxx', '.hpp', '.hh', '.hxx'],
+  },
+  java: {
+    filename: 'Main.java',
+    source: 'public class Main {\n  public static void main(String[] args) {\n    System.out.println("Hello");\n  }\n}',
+    extensions: ['.java'],
+  },
+  python: {
+    filename: 'main.py',
+    source: 'def main():\n  print("Hello")\n\n\nif __name__ == "__main__":\n  main()',
+    extensions: ['.py'],
+  },
+  javascript: {
+    filename: 'main.js',
+    source: 'function main() {\n  console.log("Hello");\n}\n\nmain();',
+    extensions: ['.js', '.mjs', '.cjs'],
+  },
+};
+
 @Component({
   selector: 'app-cfg-import-page',
   standalone: true,
@@ -20,8 +48,9 @@ export class CfgImportPageComponent implements OnDestroy {
   private pollTimer: any = null;
 
   readonly language = signal<CfgLanguage>('c');
-  readonly filename = signal('main.c');
-  readonly source = signal('int main() {\n  return 0;\n}');
+  readonly filename = signal(LANGUAGE_PRESETS.c.filename);
+  readonly source = signal(LANGUAGE_PRESETS.c.source);
+  readonly isSourceLocked = signal(false);
   readonly isSubmitting = signal(false);
   readonly message = signal<string | null>(null);
 
@@ -47,6 +76,8 @@ export class CfgImportPageComponent implements OnDestroy {
         return 'Корак 5: Мерења';
       case 5:
         return 'Корак 6: Реконструкција';
+      case 6:
+        return 'Корак 7: Извештај';
       default:
         return 'Увоз CFG-а';
     }
@@ -60,8 +91,19 @@ export class CfgImportPageComponent implements OnDestroy {
     this.stopPolling();
   }
 
+  onLanguageChange(language: CfgLanguage): void {
+    this.language.set(language);
+    this.applyLanguagePreset(language);
+    this.isSourceLocked.set(false);
+  }
+
   async submitSource(): Promise<void> {
     this.resetStateForSubmit();
+    this.workflow.setReportSourceArtifact({
+      filename: this.filename(),
+      language: this.language(),
+      source: this.source(),
+    });
     try {
       const jobId = await this.api.createJobFromSource(
         this.language(),
@@ -84,7 +126,30 @@ export class CfgImportPageComponent implements OnDestroy {
     }
 
     this.resetStateForSubmit();
+    const detectedLanguage = this.detectLanguageFromFilename(file.name);
+    if (detectedLanguage) {
+      this.language.set(detectedLanguage);
+      this.applyLanguagePreset(detectedLanguage);
+    }
+
+    let uploadedSource = this.source();
+    try {
+      const text = await file.text();
+      if (text.trim().length > 0) {
+        uploadedSource = text;
+      }
+    } catch {
+      // Keep current source if uploaded file is not readable as text.
+    }
+
     this.filename.set(file.name);
+    this.source.set(uploadedSource);
+    this.isSourceLocked.set(true);
+    this.workflow.setReportSourceArtifact({
+      filename: file.name,
+      language: this.language(),
+      source: uploadedSource,
+    });
 
     try {
       const jobId = await this.api.createJobFromUpload(this.language(), file);
@@ -162,6 +227,23 @@ export class CfgImportPageComponent implements OnDestroy {
       error: null,
       graphData: null,
     });
+  }
+
+  private applyLanguagePreset(language: CfgLanguage): void {
+    const preset = LANGUAGE_PRESETS[language];
+    this.filename.set(preset.filename);
+    this.source.set(preset.source);
+  }
+
+  private detectLanguageFromFilename(filename: string): CfgLanguage | null {
+    const lower = filename.toLowerCase();
+    const languages = Object.keys(LANGUAGE_PRESETS) as CfgLanguage[];
+    for (const language of languages) {
+      if (LANGUAGE_PRESETS[language].extensions.some(ext => lower.endsWith(ext))) {
+        return language;
+      }
+    }
+    return null;
   }
 }
 

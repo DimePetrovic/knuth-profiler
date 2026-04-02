@@ -18,7 +18,7 @@ describe('ExamplesWorkflowFacade Integration', () => {
     reconstruction = TestBed.inject(ReconstructionStateService);
   });
 
-  it('runs a full step scenario from 0 to 5 while preserving simulation from 4 to 5', () => {
+  it('runs a full step scenario from 0 to 6 while preserving simulation from 4 to 6', () => {
     expect(facade.step()).toBe(0);
 
     facade.startStep();
@@ -41,6 +41,11 @@ describe('ExamplesWorkflowFacade Integration', () => {
 
     facade.nextStep(); // 4 -> 5, should preserve state
     expect(facade.step()).toBe(5);
+    expect(simulation.counters()).toEqual({ eA: 7 });
+    expect(reconstruction.reconCounters()).toEqual({ eB: 3 });
+
+    facade.nextStep(); // 5 -> 6, should preserve state
+    expect(facade.step()).toBe(6);
     expect(simulation.counters()).toEqual({ eA: 7 });
     expect(reconstruction.reconCounters()).toEqual({ eB: 3 });
   });
