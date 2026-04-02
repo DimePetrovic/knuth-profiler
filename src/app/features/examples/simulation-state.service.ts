@@ -57,28 +57,17 @@ export class SimulationStateService {
 
   reset() {
     this.stopTimer();
-    this.isRunning.set(false);
-    this.isPaused.set(false);
-    this.isConfigLocked.set(false);
-    this.currentRun.set(0);
-    this.currentNodeId.set(null);
-    this.currentEdgeId.set(null);
-    this.counters.set({});
+    this.clearRuntimeState(true);
   }
 
   start() {
     if (!this.gd) return;
 
     this.stopTimer();
-    this.isRunning.set(false);
-    this.isPaused.set(false);
-    this.currentRun.set(0);
-    this.currentNodeId.set(null);
-    this.currentEdgeId.set(null);
-    this.counters.set({});
+    this.clearRuntimeState(false);
 
     const cfg = this.config();
-    if (!Number.isFinite(cfg.runs) || cfg.runs <= 0) {
+    if (!this.hasValidRunConfiguration(cfg)) {
       return;
     }
 
@@ -137,22 +126,17 @@ export class SimulationStateService {
   }
 
   private tick() {
-    if (!this.isRunning() || this.isPaused()) return;
+    if (!this.shouldTick()) return;
 
     const gd = this.gd;
     if (!gd) return;
 
-    // Reconstruct engine state from signals
-    const currentState: AnimatedTraversalState = {
-      currentRun: this.currentRun(),
-      currentNodeId: this.currentNodeId() || '',
-      currentEdgeId: this.currentEdgeId(),
-      counters: this.counters(),
-      isFinished: false
-    };
-
-    const cfg = this.config();
-    const nextState = tickAnimatedTraversal(gd, this.instrumented, cfg, currentState);
+    const nextState = tickAnimatedTraversal(
+      gd,
+      this.instrumented,
+      this.config(),
+      this.buildTraversalState(),
+    );
 
     this.applyTraversalState(nextState);
 
@@ -178,10 +162,42 @@ export class SimulationStateService {
   }
 
   private tickLoop() {
-    const cfg = this.config();
-    const baseInterval = 500; // ms baseline
-    const interval = Math.round(baseInterval / (cfg.speed || 1));
     this.stopTimer();
-    this.timer = setInterval(() => this.tick(), interval);
+    this.timer = setInterval(() => this.tick(), this.getTickIntervalMs());
+  }
+
+  private clearRuntimeState(unlockConfig: boolean): void {
+    this.isRunning.set(false);
+    this.isPaused.set(false);
+    if (unlockConfig) {
+      this.isConfigLocked.set(false);
+    }
+    this.currentRun.set(0);
+    this.currentNodeId.set(null);
+    this.currentEdgeId.set(null);
+    this.counters.set({});
+  }
+
+  private hasValidRunConfiguration(config: SimulationConfig): boolean {
+    return Number.isFinite(config.runs) && config.runs > 0;
+  }
+
+  private shouldTick(): boolean {
+    return this.isRunning() && !this.isPaused();
+  }
+
+  private buildTraversalState(): AnimatedTraversalState {
+    return {
+      currentRun: this.currentRun(),
+      currentNodeId: this.currentNodeId() || '',
+      currentEdgeId: this.currentEdgeId(),
+      counters: this.counters(),
+      isFinished: false,
+    };
+  }
+
+  private getTickIntervalMs(): number {
+    const baseInterval = 500;
+    return Math.round(baseInterval / (this.config().speed || 1));
   }
 }

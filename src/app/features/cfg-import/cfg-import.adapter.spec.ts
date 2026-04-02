@@ -117,3 +117,103 @@ describe('cfg-import.adapter', () => {
     expect(add?.label).toBe('14 a + b');
   });
 });
+
+describe('cfg-import.adapter – extra coverage', () => {
+  it('preserves range metadata in node data', () => {
+    const result = mapCfgJsonToGraphData({
+      version: 'cfg-json-1',
+      language: 'c',
+      filename: 'main.c',
+      sourceHash: 'sha256:r1',
+      graph: {
+        entryNodeId: 'm',
+        exitNodeId: 'mr',
+        nodes: [
+          { id: 'm', kind: 'entry', label: 'METHOD, 2 main', range: null },
+          { id: 'n1', kind: 'stmt', label: 'ASSIGN, 5 x = 1', range: 5 },
+          { id: 'mr', kind: 'exit', label: 'METHOD_RETURN, 3 int', range: null },
+        ],
+        edges: [
+          { from: 'm', to: 'n1', kind: 'next', label: '' },
+          { from: 'n1', to: 'mr', kind: 'next', label: '' },
+        ],
+      },
+    });
+
+    const n1 = result.nodes.find(n => n.id === 'n1');
+    expect(n1?.data?.['range']).toBe(5);
+  });
+
+  it('keeps label as-is when there is no comma in node label', () => {
+    const result = mapCfgJsonToGraphData({
+      version: 'cfg-json-1',
+      language: 'c',
+      filename: 'main.c',
+      sourceHash: 'sha256:r2',
+      graph: {
+        entryNodeId: 'e',
+        exitNodeId: 'x',
+        nodes: [
+          { id: 'e', kind: 'entry', label: 'ENTRY', range: null },
+          { id: 'plain', kind: 'stmt', label: 'x++', range: null },
+          { id: 'x', kind: 'exit', label: 'EXIT', range: null },
+        ],
+        edges: [
+          { from: 'e', to: 'plain', kind: 'next', label: '' },
+          { from: 'plain', to: 'x', kind: 'next', label: '' },
+        ],
+      },
+    });
+
+    const node = result.nodes.find(n => n.id === 'plain');
+    expect(node?.label).toBe('x++');
+  });
+
+  it('resolves entry from METHOD label when entryNodeId does not match any kind=entry node', () => {
+    const result = mapCfgJsonToGraphData({
+      version: 'cfg-json-1',
+      language: 'c',
+      filename: 'main.c',
+      sourceHash: 'sha256:r3',
+      graph: {
+        entryNodeId: 'n99',
+        exitNodeId: 'n98',
+        nodes: [
+          { id: 'n1', kind: 'stmt', label: 'METHOD, 1 main', range: null },
+          { id: 'n2', kind: 'stmt', label: 'x = 1', range: null },
+          { id: 'n98', kind: 'stmt', label: 'METHOD_RETURN, 3 int', range: null },
+        ],
+        edges: [
+          { from: 'n1', to: 'n2', kind: 'next', label: '' },
+          { from: 'n2', to: 'n98', kind: 'next', label: '' },
+        ],
+      },
+    });
+
+    // n1 (METHOD) should be resolved as ENTRY
+    expect(result.nodes.some(n => n.id === 'ENTRY')).toBeTrue();
+  });
+
+  it('adds sentinel edges automatically if missing from input', () => {
+    const result = mapCfgJsonToGraphData({
+      version: 'cfg-json-1',
+      language: 'c',
+      filename: 'main.c',
+      sourceHash: 'sha256:r4',
+      graph: {
+        entryNodeId: 'a',
+        exitNodeId: 'b',
+        nodes: [
+          { id: 'a', kind: 'entry', label: 'ENTRY', range: null },
+          { id: 'b', kind: 'exit', label: 'EXIT', range: null },
+        ],
+        edges: [{ from: 'a', to: 'b', kind: 'next', label: '' }],
+      },
+    });
+
+    const hasEntrySentinel = result.edges.some(e => e.id === '__entry_sentinel__');
+    const hasExitSentinel = result.edges.some(e => e.id === '__exit_sentinel__');
+    expect(hasEntrySentinel).toBeTrue();
+    expect(hasExitSentinel).toBeTrue();
+  });
+});

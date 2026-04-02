@@ -4,9 +4,13 @@ import { FormsModule } from '@angular/forms';
 import { ExamplesWorkflowFacade } from '../../features/examples/examples-workflow.facade';
 import { CfgImportApiService } from '../../features/cfg-import/cfg-import.api.service';
 import { mapCfgJsonToGraphData } from '../../features/cfg-import/cfg-import.adapter';
+import { CfgJobPollingService } from '../../features/cfg-import/cfg-job-polling.service';
 import { CfgErrorJson, CfgImportViewState, CfgLanguage, CfgResultJson } from '../../features/cfg-import/cfg-import.types';
+import { getWorkflowStepMetadata } from '../../features/examples/workflow-step-metadata';
 import { GraphCanvasComponent } from '../../shared/graph-canvas/graph-canvas.component';
 import { WorkflowPipelineComponent } from '../../shared/workflow-pipeline/workflow-pipeline.component';
+import { CfgImportSourceEditorComponent } from './cfg-import-source-editor.component';
+import { CfgImportStatusComponent } from './cfg-import-status.component';
 
 const LANGUAGE_PRESETS: Record<CfgLanguage, { filename: string; source: string; extensions: readonly string[] }> = {
   c: {
@@ -39,13 +43,21 @@ const LANGUAGE_PRESETS: Record<CfgLanguage, { filename: string; source: string; 
 @Component({
   selector: 'app-cfg-import-page',
   standalone: true,
-  imports: [CommonModule, FormsModule, GraphCanvasComponent, WorkflowPipelineComponent],
+  providers: [CfgJobPollingService],
+  imports: [
+    CommonModule,
+    FormsModule,
+    GraphCanvasComponent,
+    WorkflowPipelineComponent,
+    CfgImportSourceEditorComponent,
+    CfgImportStatusComponent,
+  ],
   templateUrl: './cfg-import-page.component.html',
 })
 export class CfgImportPageComponent implements OnDestroy {
   private readonly api = inject(CfgImportApiService);
+  private readonly polling = inject(CfgJobPollingService);
   readonly workflow = inject(ExamplesWorkflowFacade);
-  private pollTimer: any = null;
 
   readonly language = signal<CfgLanguage>('c');
   readonly filename = signal(LANGUAGE_PRESETS.c.filename);
@@ -63,45 +75,11 @@ export class CfgImportPageComponent implements OnDestroy {
   });
 
   readonly workflowTitle = computed(() => {
-    switch (this.workflow.step()) {
-      case 0:
-        return 'Корак 1: Увоз CFG-а';
-      case 1:
-        return 'Корак 2: Тежине';
-      case 2:
-        return 'Корак 3: MST';
-      case 3:
-        return 'Корак 4: Инструментација';
-      case 4:
-        return 'Корак 5: Мерења';
-      case 5:
-        return 'Корак 6: Реконструкција';
-      case 6:
-        return 'Корак 7: Извештај';
-      default:
-        return 'Увоз CFG-а';
-    }
+    return getWorkflowStepMetadata(this.workflow.step()).cfgPageTitle;
   });
 
   readonly workflowSubtitle = computed(() => {
-    switch (this.workflow.step()) {
-      case 0:
-        return 'Унеси или отпреми изворни код, покрени CFG обраду и сачекај успешан резултат посла.';
-      case 1:
-        return 'Прегледај тежине грана да би се разумела релативна важност контролних прелаза.';
-      case 2:
-        return 'Приказује се максимално разапињуће стабло као основа за селективну инструментацију.';
-      case 3:
-        return 'Означавају се гране за инструментацију, односно оне које се прате бројачима током извршавања.';
-      case 4:
-        return 'Покрени симулацију и прикупи мерења како би бројачи инструментисаних грана били попуњени.';
-      case 5:
-        return 'На основу познатих бројача реконструиши преостале вредности и добије се потпуна слика пролазака.';
-      case 6:
-        return 'Извештај приказује метрике, упоређује трошак и истиче ефекат селективне инструментације.';
-      default:
-        return 'Ток рада за увоз и анализу CFG-а.';
-    }
+    return getWorkflowStepMetadata(this.workflow.step()).cfgSubtitle;
   });
 
   constructor() {
@@ -109,7 +87,7 @@ export class CfgImportPageComponent implements OnDestroy {
   }
 
   ngOnDestroy(): void {
-    this.stopPolling();
+    this.polling.stop();
   }
 
   onLanguageChange(language: CfgLanguage): void {
@@ -185,31 +163,27 @@ export class CfgImportPageComponent implements OnDestroy {
   }
 
   private startPolling(jobId: string): void {
-    this.stopPolling();
-    this.pollTimer = setInterval(() => {
-      void this.pollOnce(jobId);
-    }, 1000);
-    void this.pollOnce(jobId);
+    this.polling.start(jobId, pollId => this.pollOnce(pollId));
   }
 
-  private async pollOnce(jobId: string): Promise<void> {
+  private async pollOnce(jobId: string): Promise<boolean> {
     try {
       const status = await this.api.getStatus(jobId);
       this.state.update(s => ({ ...s, status }));
 
       const resultState = await this.api.getResult(jobId);
       if (resultState.pending) {
-        return;
+        return true;
       }
 
-      this.stopPolling();
+      this.polling.stop();
       this.isSubmitting.set(false);
 
       const payload = resultState.result;
       if (payload.version === 'cfg-error-1') {
         this.state.update(s => ({ ...s, error: payload as CfgErrorJson }));
         this.message.set(`${payload.code}: ${payload.message}`);
-        return;
+        return false;
       }
 
       const cfg = payload as CfgResultJson;
@@ -222,18 +196,17 @@ export class CfgImportPageComponent implements OnDestroy {
       }));
       this.workflow.loadImportedGraph(graphData);
       this.message.set('CFG је спреман. Покрени визуализацију кроз кораке као на примерима.');
+      return false;
     } catch (error) {
-      this.stopPolling();
+      this.polling.stop();
       this.isSubmitting.set(false);
       this.message.set(toErrorMessage(error));
+      return false;
     }
   }
 
   private stopPolling(): void {
-    if (this.pollTimer) {
-      clearInterval(this.pollTimer);
-      this.pollTimer = null;
-    }
+    this.polling.stop();
   }
 
   private resetStateForSubmit(): void {

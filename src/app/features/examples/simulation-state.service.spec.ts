@@ -85,3 +85,89 @@ describe('SimulationStateService', () => {
     });
   });
 });
+
+describe('SimulationStateService – state machine and locking', () => {
+  let service: SimulationStateService;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({});
+    service = TestBed.inject(SimulationStateService);
+  });
+
+  describe('pause / resume / stop transitions', () => {
+    it('pause sets isPaused when running', () => {
+      service.isRunning.set(true);
+      service.pause();
+      expect(service.isPaused()).toBeTrue();
+      expect(service.isRunning()).toBeTrue();
+    });
+
+    it('pause is a no-op when not running', () => {
+      service.pause();
+      expect(service.isPaused()).toBeFalse();
+    });
+
+    it('stop clears running and paused flags and nulls node/edge', () => {
+      service.isRunning.set(true);
+      service.isPaused.set(true);
+      service.currentNodeId.set('n1');
+      service.currentEdgeId.set('e1');
+      service.stop();
+      expect(service.isRunning()).toBeFalse();
+      expect(service.isPaused()).toBeFalse();
+      expect(service.currentNodeId()).toBeNull();
+      expect(service.currentEdgeId()).toBeNull();
+    });
+
+    it('resume clears isPaused when running and paused', () => {
+      service.isRunning.set(true);
+      service.isPaused.set(true);
+      service.resume();
+      expect(service.isPaused()).toBeFalse();
+    });
+
+    it('resume is a no-op when not running', () => {
+      service.isPaused.set(true);
+      service.resume();
+      expect(service.isPaused()).toBeTrue();
+    });
+
+    it('resume is a no-op when running but not paused', () => {
+      service.isRunning.set(true);
+      service.isPaused.set(false);
+      service.resume();
+      expect(service.isPaused()).toBeFalse();
+    });
+  });
+
+  describe('config locking', () => {
+    it('setRuns is blocked while config is locked', () => {
+      service.isConfigLocked.set(true);
+      service.setRuns(99);
+      expect(service.config().runs).not.toBe(99);
+    });
+
+    it('reset always unlocks config', () => {
+      service.isConfigLocked.set(true);
+      service.reset();
+      expect(service.isConfigLocked()).toBeFalse();
+    });
+  });
+
+  describe('setSpeed edge cases', () => {
+    it('normalizes NaN speed to max (3)', () => {
+      service.setSpeed(Number.NaN);
+      expect(service.config().speed).toBe(3);
+    });
+
+    it('clamps below-minimum speed to 0.25', () => {
+      service.setSpeed(0);
+      expect(service.config().speed).toBe(0.25);
+    });
+
+    it('clamps above-maximum speed to 3', () => {
+      service.setSpeed(100);
+      expect(service.config().speed).toBe(3);
+    });
+  });
+});
