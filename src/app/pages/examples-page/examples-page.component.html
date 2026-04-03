@@ -1,11 +1,12 @@
-<section class="p-4 md:p-8 space-y-4">
+<section class="p-4 md:p-8 space-y-6 md:space-y-7 lg:space-y-8">
   <app-workflow-pipeline
+    class="block"
     [facade]="facade"
     [title]="'Примери'"
     [subtitle]="workflowSubtitle()"
     [firstStepTitle]="'Корак 1: Избор примера'">
 
-    <div pipeline-step-0 class="grid grid-cols-1 md:grid-cols-2 gap-3">
+    <div pipeline-step-0 class="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
       <button
         *ngFor="let ex of facade.examples"
         type="button"
@@ -26,10 +27,11 @@
     </div>
   </app-workflow-pipeline>
 
-  <section *ngIf="facade.step() > 0" class="border rounded-xl p-4 bg-white min-h-[520px]">
+  <section *ngIf="facade.step() > 0" class="border rounded-xl p-4 md:p-5 lg:p-6 bg-white min-h-[440px] md:min-h-[520px]">
     <app-graph-canvas
       [data]="facade.selectedData()"
       [layoutName]="facade.layoutName()"
+      (layoutNameChange)="facade.setLayout($event)"
       [overlay]="facade.overlay()">
     </app-graph-canvas>
   </section>

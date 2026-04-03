@@ -1,4 +1,4 @@
-import { Component, ElementRef, Input, OnChanges, OnDestroy, OnInit, SimpleChanges, ViewChild } from '@angular/core';
+import { Component, ElementRef, EventEmitter, Input, OnChanges, OnDestroy, OnInit, Output, SimpleChanges, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import cytoscape, { Core } from 'cytoscape';
 import { ensureCytoscapePluginsRegistered } from '../../core/graph/cytoscape-bootstrap';
@@ -16,6 +16,7 @@ export class GraphCanvasComponent implements OnInit, OnChanges, OnDestroy {
   @Input() data: GraphData | null = null;
   @Input() layoutName: GraphLayoutName = 'dagre';
   @Input() overlay: GraphOverlay | null = null;
+  @Output() layoutNameChange = new EventEmitter<GraphLayoutName>();
 
   @ViewChild('cyHost', { static: true }) cyHost!: ElementRef<HTMLDivElement>;
   private cy?: Core;
@@ -57,6 +58,19 @@ export class GraphCanvasComponent implements OnInit, OnChanges, OnDestroy {
 
   fit(): void { this.cy?.fit(undefined, 20); }
   relayout(): void { this.runLayout(); }
+
+  onLayoutChange(rawValue: string): void {
+    if (rawValue !== 'dagre' && rawValue !== 'elk') {
+      return;
+    }
+
+    const nextLayout = rawValue as GraphLayoutName;
+    if (nextLayout === this.layoutName) {
+      return;
+    }
+
+    this.layoutNameChange.emit(nextLayout);
+  }
 
   // --- Internals ------------------------------------------------------------
 

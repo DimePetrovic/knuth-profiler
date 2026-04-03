@@ -23,7 +23,7 @@
   </div>
 
   <div class="flex flex-wrap items-center gap-2">
-    <button class="px-3 py-1.5 rounded-lg bg-gray-900 text-white hover:opacity-90"
+      <button class="px-3 py-1.5 rounded-lg bg-gray-900 text-white hover:opacity-90"
             [disabled]="(facade.isRunning() && !facade.isPaused()) || !facade.hasValidSimulationRuns()"
             (click)="facade.simStart()">Покрени</button>
     <button class="px-3 py-1.5 rounded-lg border border-gray-300 hover:bg-gray-100"
