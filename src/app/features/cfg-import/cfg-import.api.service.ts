@@ -1,7 +1,8 @@
 import { Injectable } from '@angular/core';
 import { CfgErrorJson, CfgJobStatus, CfgLanguage, CfgResultJson } from './cfg-import.types';
+import { environment } from '../../../environments/environment';
 
-const API_BASE_URL = 'http://localhost:8000';
+const API_BASE_URL = environment.apiBaseUrl.replace(/\/$/, '');
 
 @Injectable({ providedIn: 'root' })
 export class CfgImportApiService {
