@@ -20,11 +20,11 @@ export const WORKFLOW_STEP_METADATA: Record<VizStep, WorkflowStepMetadata> = {
   },
   1: {
     id: 1,
-    badgeTitle: 'Корак 2: Тежине',
-    cfgPageTitle: 'Корак 2: Тежине',
-    cfgSubtitle: 'Прегледај тежине грана да би се разумела релативна важност контролних прелаза.',
-    examplesSubtitle: 'Тежине грана откривају релативну учесталост и значај појединих путања.',
-    description: 'Тежине – на свакој грани видиш ознаку w=тежина.',
+    badgeTitle: 'Корак 2: Ball-Larus тежине',
+    cfgPageTitle: 'Корак 2: Ball-Larus тежине',
+    cfgSubtitle: 'Тежине грана се додељују према Ball-Larus стратегији како би следећи кораци пратили структуру путања кроз CFG.',
+    examplesSubtitle: 'Ball-Larus тежине истичу структурни значај грана и припремају граф за MST и селективну инструментацију.',
+    description: 'Ball-Larus тежине – на свакој грани је приказана ознака w=тежина добијена Ball-Larus стратегијом.',
   },
   2: {
     id: 2,

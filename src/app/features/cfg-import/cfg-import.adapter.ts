@@ -33,14 +33,195 @@ export function mapCfgJsonToGraphData(payload: CfgResultJson): GraphData {
     target: remap(edge.to),
     label: edge.label || '',
     kind: 'normal',
-    weight: 1,
+    weight: 0,
   }));
 
   ensureEndpointNodes(nodes);
   ensureSentinelNodes(nodes);
   ensureSentinelEdges(edges);
+  assignBallLarusWeights(nodes, edges);
 
   return { nodes: dedupeNodes(nodes), edges };
+}
+
+function assignBallLarusWeights(nodes: GraphNode[], edges: GraphEdge[]): void {
+  const normalEdges = edges.filter(edge => edge.kind === 'normal');
+  if (normalEdges.length === 0) {
+    return;
+  }
+
+  const nodeIds = new Set(nodes.map(node => node.id));
+  const outgoing = new Map<string, GraphEdge[]>();
+  for (const nodeId of nodeIds) {
+    outgoing.set(nodeId, []);
+  }
+
+  for (const edge of normalEdges) {
+    if (!nodeIds.has(edge.source) || !nodeIds.has(edge.target)) {
+      continue;
+    }
+    outgoing.get(edge.source)?.push(edge);
+  }
+
+  for (const group of outgoing.values()) {
+    group.sort((left, right) => left.id.localeCompare(right.id));
+  }
+
+  const backEdgeIds = detectBackEdgeIds(nodeIds, outgoing);
+  const acyclicOutgoing = new Map<string, GraphEdge[]>();
+  for (const [nodeId, group] of outgoing.entries()) {
+    acyclicOutgoing.set(nodeId, group.filter(edge => !backEdgeIds.has(edge.id)));
+  }
+
+  const topoOrder = buildTopologicalOrder(nodeIds, acyclicOutgoing);
+  const reachableToExit = findNodesThatReachExit(acyclicOutgoing);
+  const pathCountByNode = computePathCounts(topoOrder, acyclicOutgoing, reachableToExit);
+
+  for (const edge of normalEdges) {
+    edge.weight = 1;
+  }
+
+  for (const nodeId of topoOrder) {
+    const outgoingEdges = outgoing.get(nodeId) ?? [];
+    if (outgoingEdges.length === 0) {
+      continue;
+    }
+
+    let offset = 1;
+    for (const edge of outgoingEdges) {
+      if (backEdgeIds.has(edge.id)) {
+        edge.weight = 1;
+        continue;
+      }
+
+      edge.weight = offset;
+      const targetPathCount = pathCountByNode.get(edge.target) ?? 1;
+      offset += Math.max(1, targetPathCount);
+    }
+  }
+}
+
+function detectBackEdgeIds(
+  nodeIds: Set<string>,
+  outgoing: Map<string, GraphEdge[]>
+): Set<string> {
+  const backEdgeIds = new Set<string>();
+  const visitState = new Map<string, 0 | 1 | 2>();
+  const sortedNodeIds = Array.from(nodeIds).sort((left, right) => left.localeCompare(right));
+
+  const dfs = (nodeId: string): void => {
+    visitState.set(nodeId, 1);
+
+    for (const edge of outgoing.get(nodeId) ?? []) {
+      const state = visitState.get(edge.target) ?? 0;
+      if (state === 0) {
+        dfs(edge.target);
+      } else if (state === 1) {
+        backEdgeIds.add(edge.id);
+      }
+    }
+
+    visitState.set(nodeId, 2);
+  };
+
+  for (const nodeId of sortedNodeIds) {
+    if ((visitState.get(nodeId) ?? 0) === 0) {
+      dfs(nodeId);
+    }
+  }
+
+  return backEdgeIds;
+}
+
+function buildTopologicalOrder(
+  nodeIds: Set<string>,
+  outgoing: Map<string, GraphEdge[]>
+): string[] {
+  const visited = new Set<string>();
+  const order: string[] = [];
+  const sortedNodeIds = Array.from(nodeIds).sort((left, right) => left.localeCompare(right));
+
+  const visit = (nodeId: string): void => {
+    if (visited.has(nodeId)) {
+      return;
+    }
+
+    visited.add(nodeId);
+    for (const edge of outgoing.get(nodeId) ?? []) {
+      visit(edge.target);
+    }
+    order.push(nodeId);
+  };
+
+  for (const nodeId of sortedNodeIds) {
+    visit(nodeId);
+  }
+
+  return order.reverse();
+}
+
+function findNodesThatReachExit(outgoing: Map<string, GraphEdge[]>): Set<string> {
+  const incoming = new Map<string, string[]>();
+
+  for (const [nodeId, edges] of outgoing.entries()) {
+    if (!incoming.has(nodeId)) {
+      incoming.set(nodeId, []);
+    }
+
+    for (const edge of edges) {
+      if (!incoming.has(edge.target)) {
+        incoming.set(edge.target, []);
+      }
+      incoming.get(edge.target)?.push(edge.source);
+    }
+  }
+
+  const reachable = new Set<string>([EXIT_NODE_ID]);
+  const stack = [EXIT_NODE_ID];
+
+  while (stack.length > 0) {
+    const nodeId = stack.pop()!;
+    for (const predecessor of incoming.get(nodeId) ?? []) {
+      if (reachable.has(predecessor)) {
+        continue;
+      }
+      reachable.add(predecessor);
+      stack.push(predecessor);
+    }
+  }
+
+  return reachable;
+}
+
+function computePathCounts(
+  topoOrder: string[],
+  outgoing: Map<string, GraphEdge[]>,
+  reachableToExit: Set<string>
+): Map<string, number> {
+  const pathCountByNode = new Map<string, number>();
+
+  for (let index = topoOrder.length - 1; index >= 0; index -= 1) {
+    const nodeId = topoOrder[index];
+
+    if (nodeId === EXIT_NODE_ID) {
+      pathCountByNode.set(nodeId, 1);
+      continue;
+    }
+
+    const validOutgoing = (outgoing.get(nodeId) ?? [])
+      .filter(edge => reachableToExit.has(edge.target));
+
+    if (validOutgoing.length === 0) {
+      pathCountByNode.set(nodeId, 1);
+      continue;
+    }
+
+    const sum = validOutgoing
+      .reduce((acc, edge) => acc + (pathCountByNode.get(edge.target) ?? 1), 0);
+    pathCountByNode.set(nodeId, Math.max(1, sum));
+  }
+
+  return pathCountByNode;
 }
 
 function resolveEndpointNodeId(payload: CfgResultJson, endpoint: 'entry' | 'exit'): string {

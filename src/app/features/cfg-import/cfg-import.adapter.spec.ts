@@ -119,6 +119,42 @@ describe('cfg-import.adapter', () => {
 });
 
 describe('cfg-import.adapter – extra coverage', () => {
+  it('assigns deterministic Ball-Larus style weights to imported normal edges', () => {
+    const result = mapCfgJsonToGraphData({
+      version: 'cfg-json-1',
+      language: 'c',
+      filename: 'main.c',
+      sourceHash: 'sha256:bl',
+      graph: {
+        entryNodeId: 'm',
+        exitNodeId: 'x',
+        nodes: [
+          { id: 'm', kind: 'entry', label: 'ENTRY', range: null },
+          { id: 'a', kind: 'stmt', label: 'A', range: null },
+          { id: 'b', kind: 'stmt', label: 'B', range: null },
+          { id: 'x', kind: 'exit', label: 'EXIT', range: null },
+        ],
+        edges: [
+          { from: 'm', to: 'a', kind: 'next', label: '' },
+          { from: 'm', to: 'b', kind: 'next', label: '' },
+          { from: 'a', to: 'x', kind: 'next', label: '' },
+          { from: 'b', to: 'x', kind: 'next', label: '' },
+        ],
+      },
+    });
+
+    const normalEdges = result.edges
+      .filter(edge => edge.kind === 'normal')
+      .map(edge => ({ id: edge.id, weight: edge.weight }));
+
+    expect(normalEdges).toEqual([
+      { id: 'e0', weight: 1 },
+      { id: 'e1', weight: 2 },
+      { id: 'e2', weight: 1 },
+      { id: 'e3', weight: 1 },
+    ]);
+  });
+
   it('preserves range metadata in node data', () => {
     const result = mapCfgJsonToGraphData({
       version: 'cfg-json-1',
